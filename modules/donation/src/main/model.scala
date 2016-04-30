@@ -2,10 +2,7 @@ package lila.donation
 
 import org.joda.time._
 
-case class Progress(
-    from: DateTime,
-    goal: Int,
-    current: Int) {
+case class Progress(from: DateTime, goal: Int, current: Int) {
 
   val to = from plusWeeks 1
 

@@ -4,7 +4,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 
 import ornicar.scalalib
-import scalaz.{ Monad, Monoid, OptionT, ~> }
+import scalaz.{Monad, Monoid, OptionT, ~>}
 
 trait PackageObject extends Steroids with WithFuture {
 
@@ -21,10 +21,10 @@ trait PackageObject extends Steroids with WithFuture {
   def nowTenths: Long = nowMillis / 100
   def nowSeconds: Int = (nowMillis / 1000).toInt
 
-  implicit final def runOptionT[F[+_], A](ot: OptionT[F, A]): F[Option[A]] = ot.run
+  implicit final def runOptionT[F[+ _], A](ot: OptionT[F, A]): F[Option[A]] = ot.run
 
   // from scalaz. We don't want to import all OptionTFunctions, because of the clash with `some`
-  def optionT[M[_]] = new (({ type λ[α] = M[Option[α]] })#λ ~>({ type λ[α] = OptionT[M, α] })#λ) {
+  def optionT[M[_]] = new (({ type λ[α] = M[Option[α]] })#λ ~> ({ type λ[α] = OptionT[M, α] })#λ) {
     def apply[A](a: M[Option[A]]) = new OptionT[M, A](a)
   }
 
@@ -44,26 +44,26 @@ trait PackageObject extends Steroids with WithFuture {
 
     def fold[B](fe: Exception => B, fa: A => B): B = v match {
       case scala.util.Failure(e: Exception) => fe(e)
-      case scala.util.Failure(e)            => throw e
-      case scala.util.Success(a)            => fa(a)
+      case scala.util.Failure(e) => throw e
+      case scala.util.Success(a) => fa(a)
     }
 
     def future: Fu[A] = fold(Future.failed, fuccess)
   }
 
-  def parseIntOption(str: String): Option[Int] = try {
-    Some(java.lang.Integer.parseInt(str))
-  }
-  catch {
-    case e: NumberFormatException => None
-  }
+  def parseIntOption(str: String): Option[Int] =
+    try {
+      Some(java.lang.Integer.parseInt(str))
+    } catch {
+      case e: NumberFormatException => None
+    }
 
-  def parseFloatOption(str: String): Option[Float] = try {
-    Some(java.lang.Float.parseFloat(str))
-  }
-  catch {
-    case e: NumberFormatException => None
-  }
+  def parseFloatOption(str: String): Option[Float] =
+    try {
+      Some(java.lang.Float.parseFloat(str))
+    } catch {
+      case e: NumberFormatException => None
+    }
 
   def intBox(in: Range.Inclusive)(v: Int): Int =
     math.max(in.start, math.min(v, in.end))
@@ -103,16 +103,17 @@ trait WithPlay { self: PackageObject =>
     def bind[A, B](fa: Fu[A])(f: A => Fu[B]) = fa flatMap f
   }
 
-  implicit def LilaFuMonoid[A: Monoid]: Monoid[Fu[A]] =
-    Monoid.instance((x, y) => x zip y map {
-      case (a, b) => a ⊹ b
-    }, fuccess(∅[A]))
+  implicit def LilaFuMonoid[A : Monoid]: Monoid[Fu[A]] =
+    Monoid.instance((x, y) =>
+                      x zip y map {
+                        case (a, b) => a ⊹ b
+                    },
+                    fuccess(∅[A]))
 
-  implicit def LilaFuZero[A: Zero]: Zero[Fu[A]] =
+  implicit def LilaFuZero[A : Zero]: Zero[Fu[A]] =
     Zero.instance(fuccess(zero[A]))
 
-  implicit val LilaJsObjectZero: Zero[JsObject] =
-    Zero.instance(JsObject(Seq.empty))
+  implicit val LilaJsObjectZero: Zero[JsObject] = Zero.instance(JsObject(Seq.empty))
 
   implicit def LilaJsResultZero[A]: Zero[JsResult[A]] =
     Zero.instance(JsError(Seq.empty))
@@ -126,10 +127,10 @@ trait WithPlay { self: PackageObject =>
   implicit def LilaPimpedFuture[A](fua: Fu[A]): PimpedFuture.LilaPimpedFuture[A] =
     new PimpedFuture.LilaPimpedFuture(fua)
 
-  implicit final class LilaPimpedFutureZero[A: Zero](fua: Fu[A]) {
+  implicit final class LilaPimpedFutureZero[A : Zero](fua: Fu[A]) {
 
     def nevermind: Fu[A] = fua recover {
-      case e: lila.common.LilaException             => zero[A]
+      case e: lila.common.LilaException => zero[A]
       case e: java.util.concurrent.TimeoutException => zero[A]
     }
   }
@@ -141,7 +142,9 @@ trait WithPlay { self: PackageObject =>
     }
 
     def orElse(other: => Fu[Option[A]]): Fu[Option[A]] = fua flatMap {
-      _.fold(other) { x => fuccess(x.some) }
+      _.fold(other) { x =>
+        fuccess(x.some)
+      }
     }
 
     def getOrElse(other: => Fu[A]): Fu[A] = fua flatMap { _.fold(other)(fuccess) }

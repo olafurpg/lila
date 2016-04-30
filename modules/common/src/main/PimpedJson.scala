@@ -29,7 +29,7 @@ object PimpedJson {
 
     def ints(key: String): Option[List[Int]] = arrAs(key)(_.asOpt[Int])
 
-    def get[A: Reads](key: String): Option[A] =
+    def get[A : Reads](key: String): Option[A] =
       (js \ key).asOpt[A]
 
     def noNull = JsObject {

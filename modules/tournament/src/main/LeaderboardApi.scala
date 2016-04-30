@@ -13,9 +13,7 @@ import lila.db.paginator.Adapter
 import lila.rating.PerfType
 import lila.user.User
 
-final class LeaderboardApi(
-    coll: Coll,
-    maxPerPage: Int) {
+final class LeaderboardApi(coll: Coll, maxPerPage: Int) {
 
   import LeaderboardApi._
   import BSONHandlers._
@@ -27,34 +25,36 @@ final class LeaderboardApi(
   def chart(user: User): Fu[ChartData] = {
     import reactivemongo.bson._
     import reactivemongo.api.collections.bson.BSONBatchCommands.AggregationFramework._
-    coll.aggregate(
-      Match($doc("u" -> user.id)),
-      List(GroupField("v")("nb" -> SumValue(1), "points" -> Push("s"), "ratios" -> Push("w")))
-    ).map {
+    coll
+      .aggregate(
+        Match($doc("u" -> user.id)),
+        List(GroupField("v")("nb" -> SumValue(1), "points" -> Push("s"), "ratios" -> Push("w")))
+      )
+      .map {
         _.documents map leaderboardAggregationResultBSONHandler.read
-      }.map { aggs =>
+      }
+      .map { aggs =>
         ChartData {
           aggs.flatMap { agg =>
             PerfType.byId get agg._id map {
-              _ -> ChartData.PerfResult(
-                nb = agg.nb,
-                points = ChartData.Ints(agg.points),
-                rank = ChartData.Ints(agg.ratios))
+              _ -> ChartData.PerfResult(nb = agg.nb,
+                                        points = ChartData.Ints(agg.points),
+                                        rank = ChartData.Ints(agg.ratios))
             }
           }.sortLike(PerfType.leaderboardable, _._1)
         }
       }
   }
 
-  private def paginator(user: User, page: Int, sort: Bdoc): Fu[Paginator[TourEntry]] = Paginator(
-    adapter = new Adapter[Entry](
-      collection = coll,
-      selector = $doc("u" -> user.id),
-      projection = $empty,
-      sort = sort
-    ) mapFutureList withTournaments,
-    currentPage = page,
-    maxPerPage = maxPerPage)
+  private def paginator(user: User, page: Int, sort: Bdoc): Fu[Paginator[TourEntry]] =
+    Paginator(adapter = new Adapter[Entry](
+                  collection = coll,
+                  selector = $doc("u" -> user.id),
+                  projection = $empty,
+                  sort = sort
+                ) mapFutureList withTournaments,
+              currentPage = page,
+              maxPerPage = maxPerPage)
 
   private def withTournaments(entries: Seq[Entry]): Fu[Seq[TourEntry]] =
     TournamentRepo byIds entries.map(_.tourId) map { tours =>
@@ -73,27 +73,28 @@ object LeaderboardApi {
   case class Ratio(value: Double)
 
   case class Entry(
-    id: String, // same as tournament player id
-    userId: String,
-    tourId: String,
-    nbGames: Int,
-    score: Int,
-    rank: Int,
-    rankRatio: Ratio, // ratio * rankRatioMultiplier. function of rank and tour.nbPlayers. less is better.
-    freq: Option[Schedule.Freq],
-    speed: Option[Schedule.Speed],
-    perf: PerfType,
-    date: DateTime)
+      id: String, // same as tournament player id
+      userId: String,
+      tourId: String,
+      nbGames: Int,
+      score: Int,
+      rank: Int,
+      rankRatio: Ratio, // ratio * rankRatioMultiplier. function of rank and tour.nbPlayers. less is better.
+      freq: Option[Schedule.Freq],
+      speed: Option[Schedule.Speed],
+      perf: PerfType,
+      date: DateTime)
 
   case class ChartData(perfResults: List[(PerfType, ChartData.PerfResult)]) {
     import ChartData._
     def allPerfResults = perfResults.map(_._2) match {
-      case head :: tail => tail.foldLeft(head) {
-        case (acc, res) => PerfResult(
-          nb = acc.nb + res.nb,
-          points = res.points ::: acc.points,
-          rank = res.rank ::: acc.rank)
-      }
+      case head :: tail =>
+        tail.foldLeft(head) {
+          case (acc, res) =>
+            PerfResult(nb = acc.nb + res.nb,
+                       points = res.points ::: acc.points,
+                       rank = res.rank ::: acc.rank)
+        }
       case Nil => PerfResult(0, Ints(Nil), Ints(Nil))
     }
   }

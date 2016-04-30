@@ -3,19 +3,14 @@ package lila.explorer
 import akka.actor._
 import com.typesafe.config.Config
 
-final class Env(
-    config: Config,
-    gameColl: lila.db.dsl.Coll,
-    system: ActorSystem) {
+final class Env(config: Config, gameColl: lila.db.dsl.Coll, system: ActorSystem) {
 
   private val Endpoint = config getString "endpoint"
   private val MassImportEndpoint = config getString "mass_import.endpoint"
   private val IndexFlow = config getBoolean "index_flow"
 
   private lazy val indexer = new ExplorerIndexer(
-    gameColl = gameColl,
-    endpoint = Endpoint,
-    massImportEndpoint = MassImportEndpoint)
+    gameColl = gameColl, endpoint = Endpoint, massImportEndpoint = MassImportEndpoint)
 
   def cli = new lila.common.Cli {
     def process = {
@@ -28,21 +23,22 @@ final class Env(
     import play.api.Play.current
     WS.url(s"$Endpoint/master/pgn/$id").get() map {
       case res if res.status == 200 => res.body.some
-      case _                        => None
+      case _ => None
     }
   }
 
-  if (IndexFlow) system.lilaBus.subscribe(system.actorOf(Props(new Actor {
-    def receive = {
-      case lila.game.actorApi.FinishGame(game, _, _) if !game.aborted => indexer(game)
-    }
-  })), 'finishGame)
+  if (IndexFlow)
+    system.lilaBus.subscribe(system.actorOf(Props(new Actor {
+def receive = {
+  case lila.game.actorApi.FinishGame(game, _, _) if !game.aborted => indexer(game)
+}
+})), 'finishGame)
 }
 
 object Env {
 
-  lazy val current = "explorer" boot new Env(
-    config = lila.common.PlayApp loadConfig "explorer",
-    gameColl = lila.game.Env.current.gameColl,
-    system = lila.common.PlayApp.system)
+  lazy val current =
+    "explorer" boot new Env(config = lila.common.PlayApp loadConfig "explorer",
+                            gameColl = lila.game.Env.current.gameColl,
+                            system = lila.common.PlayApp.system)
 }

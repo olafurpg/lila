@@ -5,19 +5,16 @@ import ornicar.scalalib.Random
 
 import lila.user.User
 
-case class Thread(
-    _id: String,
-    name: String,
-    createdAt: DateTime,
-    updatedAt: DateTime,
-    posts: List[Post],
-    creatorId: String,
-    invitedId: String,
-    visibleByUserIds: List[String]) {
+case class Thread(_id: String,
+                  name: String,
+                  createdAt: DateTime,
+                  updatedAt: DateTime,
+                  posts: List[Post],
+                  creatorId: String,
+                  invitedId: String,
+                  visibleByUserIds: List[String]) {
 
-  def +(post: Post) = copy(
-    posts = posts :+ post,
-    updatedAt = post.createdAt)
+  def +(post: Post) = copy(posts = posts :+ post, updatedAt = post.createdAt)
 
   def id = _id
 
@@ -27,9 +24,12 @@ case class Thread(
 
   def isUnReadBy(user: User) = !isReadBy(user)
 
-  def nbUnreadBy(user: User): Int = isCreator(user).fold(
-    posts count { post => post.isByInvited && post.isUnRead },
-    posts count { post => post.isByCreator && post.isUnRead })
+  def nbUnreadBy(user: User): Int =
+    isCreator(user).fold(posts count { post =>
+    post.isByInvited && post.isUnRead
+  }, posts count { post =>
+    post.isByCreator && post.isUnRead
+  })
 
   def nbUnread: Int = posts count (_.isUnRead)
 
@@ -64,22 +64,19 @@ object Thread {
 
   val idSize = 8
 
-  def make(
-    name: String,
-    text: String,
-    creatorId: String,
-    invitedId: String): Thread = Thread(
-    _id = Random nextStringUppercase idSize,
-    name = name,
-    createdAt = DateTime.now,
-    updatedAt = DateTime.now,
-    posts = List(Post.make(
-      text = text,
-      isByCreator = true
-    )),
-    creatorId = creatorId,
-    invitedId = invitedId,
-    visibleByUserIds = List(creatorId, invitedId))
+  def make(name: String, text: String, creatorId: String, invitedId: String): Thread =
+    Thread(_id = Random nextStringUppercase idSize,
+           name = name,
+           createdAt = DateTime.now,
+           updatedAt = DateTime.now,
+           posts = List(
+               Post.make(
+                 text = text,
+                 isByCreator = true
+               )),
+           creatorId = creatorId,
+           invitedId = invitedId,
+           visibleByUserIds = List(creatorId, invitedId))
 
   import lila.db.dsl.BSONJodaDateTimeHandler
   import Post.PostBSONHandler

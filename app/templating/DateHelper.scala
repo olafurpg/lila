@@ -6,7 +6,7 @@ import scala.collection.mutable
 
 import org.joda.time.format._
 import org.joda.time.format.ISODateTimeFormat
-import org.joda.time.{ Period, PeriodType, DurationFieldType, DateTime, DateTimeZone }
+import org.joda.time.{Period, PeriodType, DurationFieldType, DateTime, DateTimeZone}
 import play.twirl.api.Html
 
 import lila.api.Context
@@ -19,10 +19,9 @@ trait DateHelper { self: I18nHelper =>
   private val dateTimeFormatters = mutable.Map[String, DateTimeFormatter]()
   private val dateFormatters = mutable.Map[String, DateTimeFormatter]()
   private val periodFormatters = mutable.Map[String, PeriodFormatter]()
-  private val periodType = PeriodType forFields Array(
-    DurationFieldType.days,
-    DurationFieldType.hours,
-    DurationFieldType.minutes)
+  private val periodType =
+    PeriodType forFields Array(
+      DurationFieldType.days, DurationFieldType.hours, DurationFieldType.minutes)
 
   private val isoFormatter = ISODateTimeFormat.dateTime
 
@@ -39,11 +38,10 @@ trait DateHelper { self: I18nHelper =>
       DateTimeFormat forStyle dateStyle withLocale new Locale(lang(ctx).language))
 
   private def periodFormatter(ctx: Context): PeriodFormatter =
-    periodFormatters.getOrElseUpdate(
-      lang(ctx).language, {
-        Locale setDefault Locale.ENGLISH
-        PeriodFormat wordBased new Locale(lang(ctx).language)
-      })
+    periodFormatters.getOrElseUpdate(lang(ctx).language, {
+    Locale setDefault Locale.ENGLISH
+    PeriodFormat wordBased new Locale(lang(ctx).language)
+  })
 
   def showDateTime(date: DateTime)(implicit ctx: Context): String =
     dateTimeFormatter(ctx) print date

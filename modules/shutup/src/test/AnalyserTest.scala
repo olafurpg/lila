@@ -21,7 +21,8 @@ class DetectTest extends Specification {
     "find no bad words" in {
       find("") must_== Nil
       find("hello there") must_== Nil
-      find("A sonnet is a poetic form which originated in Italy; Giacomo Da Lentini is credited with its invention.") must_== Nil
+      find(
+        "A sonnet is a poetic form which originated in Italy; Giacomo Da Lentini is credited with its invention.") must_== Nil
       find("computer analysis") must_== Nil
     }
     "find badly spelled words" in {
@@ -34,14 +35,16 @@ class DetectTest extends Specification {
       find("ass as ashole") must_== List("ass", "ashole")
     }
     "find plurals" in {
-      find("cunts kunts cuntings kawas kuntings") must_== List("cunts", "kunts", "cuntings", "kuntings")
+      find("cunts kunts cuntings kawas kuntings") must_==
+        List("cunts", "kunts", "cuntings", "kuntings")
     }
     "fucks" in {
-      find("fuck fffuuk fektard feak fak phuk") must_== List("fuck", "fffuuk", "fektard", "fak", "phuk")
+      find("fuck fffuuk fektard feak fak phuk") must_==
+        List("fuck", "fffuuk", "fektard", "fak", "phuk")
     }
     "compute ratio" in {
-      ratio("fuck that shit") must_== 2d/3
-      ratio("Beat them cunting nigger faggots with a communist dick") must_== 4d/9
+      ratio("fuck that shit") must_== 2d / 3
+      ratio("Beat them cunting nigger faggots with a communist dick") must_== 4d / 9
       ratio("hello there") must_== 0
       ratio("") must_== 0
     }

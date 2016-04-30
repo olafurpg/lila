@@ -30,11 +30,9 @@ private[bookmark] object BookmarkRepo {
     coll.remove($doc("g" -> $in(gameIds: _*))).void
 
   private def add(gameId: String, userId: String, date: DateTime): Funit =
-    coll.insert($doc(
-      "_id" -> makeId(gameId, userId),
-      "g" -> gameId,
-      "u" -> userId,
-      "d" -> date)).void
+    coll
+      .insert($doc("_id" -> makeId(gameId, userId), "g" -> gameId, "u" -> userId, "d" -> date))
+      .void
 
   def userIdQuery(userId: String) = $doc("u" -> userId)
   def makeId(gameId: String, userId: String) = s"$gameId$userId"

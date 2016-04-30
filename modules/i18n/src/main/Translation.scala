@@ -2,13 +2,12 @@ package lila.i18n
 
 import org.joda.time.DateTime
 
-private[i18n] case class Translation(
-    _id: Int,
-    code: String, // 2-chars code
-    text: String,
-    author: Option[String] = None,
-    comment: Option[String] = None,
-    createdAt: DateTime) {
+private[i18n] case class Translation(_id: Int,
+                                     code: String, // 2-chars code
+                                     text: String,
+                                     author: Option[String] = None,
+                                     comment: Option[String] = None,
+                                     createdAt: DateTime) {
 
   def id = _id
 

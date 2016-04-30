@@ -1,19 +1,18 @@
 package lila.api
 
-import play.api.libs.json.{ JsObject, JsArray }
-import play.api.mvc.{ Request, RequestHeader }
+import play.api.libs.json.{JsObject, JsArray}
+import play.api.mvc.{Request, RequestHeader}
 
 import lila.pref.Pref
-import lila.user.{ UserContext, HeaderUserContext, BodyUserContext }
+import lila.user.{UserContext, HeaderUserContext, BodyUserContext}
 
-case class PageData(
-  friends: List[lila.common.LightUser],
-  teamNbRequests: Int,
-  nbMessages: Int,
-  nbChallenges: Int,
-  pref: Pref,
-  blindMode: Boolean,
-  hasFingerprint: Boolean)
+case class PageData(friends: List[lila.common.LightUser],
+                    teamNbRequests: Int,
+                    nbMessages: Int,
+                    nbChallenges: Int,
+                    pref: Pref,
+                    blindMode: Boolean,
+                    hasFingerprint: Boolean)
 
 object PageData {
 
@@ -65,20 +64,17 @@ sealed trait Context extends lila.user.UserContextWrapper {
     userContext.req.session get name orElse { pref get name }
 }
 
-sealed abstract class BaseContext(
-  val userContext: lila.user.UserContext,
-  val pageData: PageData) extends Context
+sealed abstract class BaseContext(val userContext: lila.user.UserContext, val pageData: PageData)
+    extends Context
 
-final class BodyContext[A](
-    val bodyContext: BodyUserContext[A],
-    data: PageData) extends BaseContext(bodyContext, data) {
+final class BodyContext[A](val bodyContext: BodyUserContext[A], data: PageData)
+    extends BaseContext(bodyContext, data) {
 
   def body = bodyContext.body
 }
 
-final class HeaderContext(
-  headerContext: HeaderUserContext,
-  data: PageData) extends BaseContext(headerContext, data)
+final class HeaderContext(headerContext: HeaderUserContext, data: PageData)
+    extends BaseContext(headerContext, data)
 
 object Context {
 

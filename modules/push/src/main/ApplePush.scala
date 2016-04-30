@@ -6,24 +6,22 @@ import scala.util.Failure
 
 import play.api.libs.json._
 
-private final class ApplePush(
-    getDevice: String => Fu[Option[Device]],
-    system: ActorSystem,
-    certificate: InputStream,
-    password: String,
-    enabled: Boolean) {
+private final class ApplePush(getDevice: String => Fu[Option[Device]],
+                              system: ActorSystem,
+                              certificate: InputStream,
+                              password: String,
+                              enabled: Boolean) {
 
   private val actor = system.actorOf(Props(classOf[ApnsActor], certificate, password))
 
   def apply(userId: String)(data: => PushApi.Data): Funit =
     getDevice(userId) map {
       _ foreach { device =>
-        if (enabled) actor ! ApplePush.Notification(
-          token = device.deviceId,
-          alert = Json.obj(
-            "title" -> data.title,
-            "body" -> data.body),
-          payload = data.payload)
+        if (enabled)
+          actor ! ApplePush.Notification(
+            token = device.deviceId,
+            alert = Json.obj("title" -> data.title, "body" -> data.body),
+            payload = data.payload)
         else logger.warn(s"Sorry $userId, apple push is disabled by config!")
       }
     }
@@ -83,19 +81,18 @@ private final class ApnsActor(certificate: InputStream, password: String) extend
 
   def receive = {
     case ApplePush.Notification(token, alert, payload) =>
+    // val payloadBuilder = new ApnsPayloadBuilder()
 
-      // val payloadBuilder = new ApnsPayloadBuilder()
+    // payloadBuilder.setAlertBody(Json stringify alert)
+    // payloadBuilder.setBadgeNumber(1)
+    // payloadBuilder.addCustomProperty("data", Json stringify payload)
 
-      // payloadBuilder.setAlertBody(Json stringify alert)
-      // payloadBuilder.setBadgeNumber(1)
-      // payloadBuilder.addCustomProperty("data", Json stringify payload)
+    // val notif = new SimpleApnsPushNotification(
+    //   TokenUtil.tokenStringToByteArray(token),
+    //   payloadBuilder.buildWithDefaultMaximumLength())
 
-      // val notif = new SimpleApnsPushNotification(
-      //   TokenUtil.tokenStringToByteArray(token),
-      //   payloadBuilder.buildWithDefaultMaximumLength())
+    // logger.info(s"Sending alert=$alert, payload=$payload to $token")
 
-      // logger.info(s"Sending alert=$alert, payload=$payload to $token")
-
-      // getManager.getQueue().put(notif)
+    // getManager.getQueue().put(notif)
   }
 }

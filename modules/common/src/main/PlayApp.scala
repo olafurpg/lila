@@ -1,9 +1,9 @@
 package lila.common
 
 import com.typesafe.config.Config
-import org.joda.time.{ DateTime, Period }
+import org.joda.time.{DateTime, Period}
 import play.api.i18n.Lang
-import play.api.{ Play, Application, Mode }
+import play.api.{Play, Application, Mode}
 import scala.collection.JavaConversions._
 
 object PlayApp {
@@ -33,9 +33,10 @@ object PlayApp {
 
   private def enableScheduler = !(loadConfig getBoolean "app.scheduler.disabled")
 
-  def scheduler = new Scheduler(system.scheduler,
-    enabled = enableScheduler && isServer,
-    debug = loadConfig getBoolean "app.scheduler.debug")
+  def scheduler =
+    new Scheduler(system.scheduler,
+                  enabled = enableScheduler && isServer,
+                  debug = loadConfig getBoolean "app.scheduler.debug")
 
   def lifecycle = withApp(_.injector.instanceOf[play.api.inject.ApplicationLifecycle])
 

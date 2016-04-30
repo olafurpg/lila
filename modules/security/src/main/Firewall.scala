@@ -7,8 +7,8 @@ import org.joda.time.DateTime
 import ornicar.scalalib.Random
 import play.api.libs.json._
 import play.api.mvc.Results.Redirect
-import play.api.mvc.{ RequestHeader, Handler, Action, Cookies }
-import spray.caching.{ LruCache, Cache }
+import play.api.mvc.{RequestHeader, Handler, Action, Cookies}
+import spray.caching.{LruCache, Cache}
 
 import lila.common.LilaCookie
 import lila.common.PimpedJson._
@@ -16,22 +16,19 @@ import lila.db.dsl._
 import lila.db.BSON.BSONJodaDateTimeHandler
 
 final class Firewall(
-    coll: Coll,
-    cookieName: Option[String],
-    enabled: Boolean,
-    cachedIpsTtl: Duration) {
+    coll: Coll, cookieName: Option[String], enabled: Boolean, cachedIpsTtl: Duration) {
 
   private def ipOf(req: RequestHeader) =
     lila.common.HTTPRequest lastRemoteAddress req
 
-  def blocks(req: RequestHeader): Fu[Boolean] = if (enabled) {
-    cookieName.fold(blocksIp(ipOf(req))) { cn =>
-      blocksIp(ipOf(req)) map (_ || blocksCookies(req.cookies, cn))
-    } addEffect { v =>
-      if (v) lila.mon.security.firewall.block()
-    }
-  }
-  else fuccess(false)
+  def blocks(req: RequestHeader): Fu[Boolean] =
+    if (enabled) {
+      cookieName.fold(blocksIp(ipOf(req))) { cn =>
+        blocksIp(ipOf(req)) map (_ || blocksCookies(req.cookies, cn))
+      } addEffect { v =>
+        if (v) lila.mon.security.firewall.block()
+      }
+    } else fuccess(false)
 
   def accepts(req: RequestHeader): Fu[Boolean] = blocks(req) map (!_)
 
@@ -61,7 +58,8 @@ final class Firewall(
     (cookies get name).isDefined
 
   // http://stackoverflow.com/questions/106179/regular-expression-to-match-hostname-or-ip-address
-  private val ipRegex = """^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$""".r
+  private val ipRegex =
+    """^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$""".r
 
   private def validIp(ip: String) =
     (ipRegex matches ip) && ip != "127.0.0.1" && ip != "0.0.0.0"

@@ -1,13 +1,10 @@
 package lila.bookmark
 
 import lila.db.dsl._
-import lila.game.{ Game, GameRepo }
+import lila.game.{Game, GameRepo}
 import lila.user.User
 
-final class BookmarkApi(
-    coll: Coll,
-    cached: Cached,
-    paginator: PaginatorBuilder) {
+final class BookmarkApi(coll: Coll, cached: Cached, paginator: PaginatorBuilder) {
 
   import lila.game.BSONHandlers.gameBSONHandler
 
@@ -16,7 +13,7 @@ final class BookmarkApi(
       _ ?? { game =>
         BookmarkRepo.toggle(gameId, userId) flatMap { bookmarked =>
           GameRepo.incBookmarks(gameId, bookmarked.fold(1, -1)) >>-
-            (cached.gameIdsCache invalidate userId)
+          (cached.gameIdsCache invalidate userId)
         }
       }
     }
@@ -30,5 +27,7 @@ final class BookmarkApi(
   def removeByGameId(id: String): Funit = BookmarkRepo removeByGameId id
 
   def gamePaginatorByUser(user: User, page: Int) =
-    paginator.byUser(user, page) map2 { (b: Bookmark) => b.game }
+    paginator.byUser(user, page) map2 { (b: Bookmark) =>
+      b.game
+    }
 }

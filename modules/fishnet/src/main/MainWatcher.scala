@@ -2,13 +2,11 @@ package lila.fishnet
 
 import scala.concurrent.duration._
 
-import lila.hub.actorApi.slack.{ Victory, Warning }
+import lila.hub.actorApi.slack.{Victory, Warning}
 import lila.memo.ExpireSetMemo
 
 private final class MainWatcher(
-    repo: FishnetRepo,
-    bus: lila.common.Bus,
-    scheduler: lila.common.Scheduler) {
+    repo: FishnetRepo, bus: lila.common.Bus, scheduler: lila.common.Scheduler) {
 
   private val alerted = new ExpireSetMemo(1 hour)
 

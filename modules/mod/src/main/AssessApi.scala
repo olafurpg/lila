@@ -1,13 +1,13 @@
 package lila.mod
 
 import akka.actor.ActorSelection
-import lila.analyse.{ Analysis, AnalysisRepo }
+import lila.analyse.{Analysis, AnalysisRepo}
 import lila.db.BSON.BSONJodaDateTimeHandler
 import lila.db.dsl._
 import lila.evaluation.Statistics
-import lila.evaluation.{ AccountAction, Analysed, GameAssessment, PlayerAssessment, PlayerAggregateAssessment, PlayerFlags, PlayerAssessments, Assessible }
-import lila.game.{ Game, Player, GameRepo, Source, Pov }
-import lila.user.{ User, UserRepo }
+import lila.evaluation.{AccountAction, Analysed, GameAssessment, PlayerAssessment, PlayerAggregateAssessment, PlayerFlags, PlayerAssessments, Assessible}
+import lila.game.{Game, Player, GameRepo, Source, Pov}
+import lila.user.{User, UserRepo}
 
 import org.joda.time.DateTime
 import reactivemongo.bson._
@@ -16,13 +16,12 @@ import scala.util.Random
 
 import chess.Color
 
-final class AssessApi(
-    collAssessments: Coll,
-    logApi: ModlogApi,
-    modApi: ModApi,
-    reporter: ActorSelection,
-    fishnet: ActorSelection,
-    userIdsSharingIp: String => Fu[List[String]]) {
+final class AssessApi(collAssessments: Coll,
+                      logApi: ModlogApi,
+                      modApi: ModApi,
+                      reporter: ActorSelection,
+                      fishnet: ActorSelection,
+                      userIdsSharingIp: String => Fu[List[String]]) {
 
   import PlayerFlags.playerFlagsBSONHandler
 
@@ -35,7 +34,8 @@ final class AssessApi(
     collAssessments.byId[PlayerAssessment](id)
 
   def getPlayerAssessmentsByUserId(userId: String, nb: Int = 100) =
-    collAssessments.find($doc("userId" -> userId))
+    collAssessments
+      .find($doc("userId" -> userId))
       .sort($doc("date" -> -1))
       .cursor[PlayerAssessment]()
       .gather[List](nb)
@@ -44,25 +44,24 @@ final class AssessApi(
     getPlayerAssessmentById(gameId + "/" + color.name)
 
   def getGameResultsById(gameId: String) =
-    getResultsByGameIdAndColor(gameId, Color.White) zip
-      getResultsByGameIdAndColor(gameId, Color.Black) map {
-        a => PlayerAssessments(a._1, a._2)
-      }
+    getResultsByGameIdAndColor(gameId, Color.White) zip getResultsByGameIdAndColor(
+      gameId, Color.Black) map { a =>
+      PlayerAssessments(a._1, a._2)
+    }
 
-  def getPlayerAggregateAssessment(userId: String, nb: Int = 100): Fu[Option[PlayerAggregateAssessment]] = {
+  def getPlayerAggregateAssessment(
+      userId: String, nb: Int = 100): Fu[Option[PlayerAggregateAssessment]] = {
     val relatedUsers = userIdsSharingIp(userId)
-    UserRepo.byId(userId) zip
-      getPlayerAssessmentsByUserId(userId, nb) zip
-      relatedUsers zip
-      (relatedUsers flatMap UserRepo.filterByEngine) map {
-        case (((Some(user), assessedGamesHead :: assessedGamesTail), relatedUs), relatedCheaters) =>
-          Some(PlayerAggregateAssessment(
-            user,
-            assessedGamesHead :: assessedGamesTail,
-            relatedUs,
-            relatedCheaters))
-        case _ => none
-      }
+    UserRepo.byId(userId) zip getPlayerAssessmentsByUserId(userId, nb) zip relatedUsers zip
+    (relatedUsers flatMap UserRepo.filterByEngine) map {
+      case (((Some(user), assessedGamesHead :: assessedGamesTail), relatedUs), relatedCheaters) =>
+        Some(
+          PlayerAggregateAssessment(user,
+                                    assessedGamesHead :: assessedGamesTail,
+                                    relatedUs,
+                                    relatedCheaters))
+      case _ => none
+    }
   }
 
   def withGames(pag: PlayerAggregateAssessment): Fu[PlayerAggregateAssessment.WithGames] =
@@ -70,25 +69,27 @@ final class AssessApi(
       PlayerAggregateAssessment.WithGames(pag, _)
     }
 
-  def getPlayerAggregateAssessmentWithGames(userId: String, nb: Int = 100): Fu[Option[PlayerAggregateAssessment.WithGames]] =
+  def getPlayerAggregateAssessmentWithGames(
+      userId: String, nb: Int = 100): Fu[Option[PlayerAggregateAssessment.WithGames]] =
     getPlayerAggregateAssessment(userId, nb) flatMap {
-      case None      => fuccess(none)
+      case None => fuccess(none)
       case Some(pag) => withGames(pag).map(_.some)
     }
 
   def refreshAssessByUsername(username: String): Funit = withUser(username) { user =>
     (GameRepo.gamesForAssessment(user.id, 100) flatMap { gs =>
-      (gs map { g =>
-        AnalysisRepo.byId(g.id) flatMap {
-          case Some(a) => onAnalysisReady(g, a, false)
-          case _       => funit
-        }
-      }).sequenceFu.void
-    }) >> assessUser(user.id)
+          (gs map { g =>
+                AnalysisRepo.byId(g.id) flatMap {
+                  case Some(a) => onAnalysisReady(g, a, false)
+                  case _ => funit
+                }
+              }).sequenceFu.void
+        }) >> assessUser(user.id)
   }
 
   def onAnalysisReady(game: Game, analysis: Analysis, thenAssessUser: Boolean = true): Funit = {
-    def consistentMoveTimes(game: Game)(player: Player) = Statistics.consistentMoveTimes(Pov(game, player))
+    def consistentMoveTimes(game: Game)(player: Player) =
+      Statistics.consistentMoveTimes(Pov(game, player))
     val shouldAssess =
       if (!game.source.exists(assessableSources.contains)) false
       else if (game.players.exists(_.hasSuspiciousHoldAlert)) true
@@ -99,25 +100,28 @@ final class AssessApi(
       else true
     shouldAssess.?? {
       val assessible = Assessible(Analysed(game, analysis))
-      createPlayerAssessment(assessible playerAssessment chess.White) >>
-        createPlayerAssessment(assessible playerAssessment chess.Black)
-    } >> ((shouldAssess && thenAssessUser) ?? {
-      game.whitePlayer.userId.??(assessUser) >> game.blackPlayer.userId.??(assessUser)
-    })
+      createPlayerAssessment(assessible playerAssessment chess.White) >> createPlayerAssessment(
+        assessible playerAssessment chess.Black)
+    } >>
+    ((shouldAssess && thenAssessUser) ?? {
+          game.whitePlayer.userId.??(assessUser) >> game.blackPlayer.userId.??(assessUser)
+        })
   }
 
   def assessUser(userId: String): Funit =
     getPlayerAggregateAssessment(userId) flatMap {
-      case Some(playerAggregateAssessment) => playerAggregateAssessment.action match {
-        case AccountAction.Engine | AccountAction.EngineAndBan =>
-          modApi.autoAdjust(userId)
-        case AccountAction.Report =>
-          reporter ! lila.hub.actorApi.report.Cheater(userId, playerAggregateAssessment.reportText(3))
-          funit
-        case AccountAction.Nothing =>
-          // reporter ! lila.hub.actorApi.report.Clean(userId)
-          funit
-      }
+      case Some(playerAggregateAssessment) =>
+        playerAggregateAssessment.action match {
+          case AccountAction.Engine | AccountAction.EngineAndBan =>
+            modApi.autoAdjust(userId)
+          case AccountAction.Report =>
+            reporter ! lila.hub.actorApi.report
+              .Cheater(userId, playerAggregateAssessment.reportText(3))
+            funit
+          case AccountAction.Nothing =>
+            // reporter ! lila.hub.actorApi.report.Clean(userId)
+            funit
+        }
       case none => funit
     }
 
@@ -137,13 +141,15 @@ final class AssessApi(
     }
 
     def noFastCoefVariation(player: Player): Option[Double] =
-      Statistics.noFastMoves(Pov(game, player)) ?? Statistics.moveTimeCoefVariation(Pov(game, player))
+      Statistics.noFastMoves(Pov(game, player)) ?? Statistics.moveTimeCoefVariation(
+        Pov(game, player))
 
     def winnerUserOption = game.winnerColor.map(_.fold(white, black))
-    def winnerNbGames = for {
-      user <- winnerUserOption
-      perfType <- game.perfType
-    } yield user.perfs(perfType).nb
+    def winnerNbGames =
+      for {
+        user <- winnerUserOption
+        perfType <- game.perfType
+      } yield user.perfs(perfType).nb
 
     def suspCoefVariation(c: Color) = {
       val x = noFastCoefVariation(game player c)
@@ -191,5 +197,4 @@ final class AssessApi(
 
   private def withUser[A](username: String)(op: User => Fu[A]): Fu[A] =
     UserRepo named username flatten "[mod] missing user " + username flatMap op
-
 }

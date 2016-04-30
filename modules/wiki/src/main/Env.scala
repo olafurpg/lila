@@ -15,9 +15,7 @@ final class Env(config: Config, db: lila.db.Env) {
   lazy val api = new Api(pageColl)
 
   private lazy val fetcher = new Fetch(
-    coll = pageColl,
-    gitUrl = GitUrl,
-    markdownPath = MarkdownPath)
+    coll = pageColl, gitUrl = GitUrl, markdownPath = MarkdownPath)
 
   def cli = new lila.common.Cli {
     def process = {
@@ -29,7 +27,6 @@ final class Env(config: Config, db: lila.db.Env) {
 
 object Env {
 
-  lazy val current = "wiki" boot new Env(
-    config = lila.common.PlayApp loadConfig "wiki",
-    db = lila.db.Env.current)
+  lazy val current =
+    "wiki" boot new Env(config = lila.common.PlayApp loadConfig "wiki", db = lila.db.Env.current)
 }

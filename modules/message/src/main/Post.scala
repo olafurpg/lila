@@ -3,12 +3,11 @@ package lila.message
 import org.joda.time.DateTime
 import ornicar.scalalib.Random
 
-case class Post(
-    id: String,
-    text: String,
-    isByCreator: Boolean,
-    isRead: Boolean,
-    createdAt: DateTime) {
+case class Post(id: String,
+                text: String,
+                isByCreator: Boolean,
+                isRead: Boolean,
+                createdAt: DateTime) {
 
   def isByInvited = !isByCreator
 
@@ -21,14 +20,12 @@ object Post {
 
   val idSize = 8
 
-  def make(
-    text: String,
-    isByCreator: Boolean): Post = Post(
-    id = Random nextStringUppercase idSize,
-    text = text,
-    isByCreator = isByCreator,
-    isRead = false,
-    createdAt = DateTime.now)
+  def make(text: String, isByCreator: Boolean): Post =
+    Post(id = Random nextStringUppercase idSize,
+         text = text,
+         isByCreator = isByCreator,
+         isRead = false,
+         createdAt = DateTime.now)
 
   import lila.db.dsl.BSONJodaDateTimeHandler
   private[message] implicit val PostBSONHandler = reactivemongo.bson.Macros.handler[Post]

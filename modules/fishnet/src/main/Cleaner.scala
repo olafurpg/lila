@@ -7,12 +7,11 @@ import scala.concurrent.duration._
 import lila.db.BSON.BSONJodaDateTimeHandler
 import lila.db.dsl._
 
-private final class Cleaner(
-    repo: FishnetRepo,
-    moveDb: MoveDB,
-    analysisColl: Coll,
-    monitor: Monitor,
-    scheduler: lila.common.Scheduler) {
+private final class Cleaner(repo: FishnetRepo,
+                            moveDb: MoveDB,
+                            analysisColl: Coll,
+                            monitor: Monitor,
+                            scheduler: lila.common.Scheduler) {
 
   import BSONHandlers._
 
@@ -30,17 +29,24 @@ private final class Cleaner(
     }
   }
 
-  private def cleanAnalysis: Funit = analysisColl.find(BSONDocument(
-    "acquired.date" -> BSONDocument("$lt" -> durationAgo(analysisTimeoutBase))
-  )).sort(BSONDocument("acquired.date" -> 1)).cursor[Work.Analysis]().gather[List](100).flatMap {
-    _.filter { ana =>
-      ana.acquiredAt.??(_ isBefore durationAgo(analysisTimeout(ana.nbPly)))
-    }.map { ana =>
-      repo.updateOrGiveUpAnalysis(ana.timeout) >>-
-        logger.info(s"Timeout analysis $ana") >>-
-        ana.acquired.foreach { ack => Monitor.timeout(ana, ack.userId) }
-    }.sequenceFu.void
-  }
+  private def cleanAnalysis: Funit =
+    analysisColl
+      .find(BSONDocument(
+          "acquired.date" -> BSONDocument("$lt" -> durationAgo(analysisTimeoutBase))
+        ))
+      .sort(BSONDocument("acquired.date" -> 1))
+      .cursor[Work.Analysis]()
+      .gather[List](100)
+      .flatMap {
+        _.filter { ana =>
+          ana.acquiredAt.??(_ isBefore durationAgo(analysisTimeout(ana.nbPly)))
+        }.map { ana =>
+          repo.updateOrGiveUpAnalysis(ana.timeout) >>- logger.info(s"Timeout analysis $ana") >>- ana.acquired.foreach {
+            ack =>
+              Monitor.timeout(ana, ack.userId)
+          }
+        }.sequenceFu.void
+      }
 
   private def scheduleMoves = scheduler.once(1 second)(cleanMoves)
   private def scheduleAnalysis = scheduler.once(5 second)(cleanAnalysis)

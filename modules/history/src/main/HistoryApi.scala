@@ -1,12 +1,12 @@
 package lila.history
 
-import org.joda.time.{ DateTime, Days }
+import org.joda.time.{DateTime, Days}
 import reactivemongo.bson._
 
 import chess.Speed
 import lila.db.dsl._
 import lila.game.Game
-import lila.user.{ User, Perfs }
+import lila.user.{User, Perfs}
 
 final class HistoryApi(coll: Coll) {
 
@@ -27,18 +27,21 @@ final class HistoryApi(coll: Coll) {
       (isStd && game.speed == Speed.Bullet).option("bullet" -> perfs.bullet),
       (isStd && game.speed == Speed.Blitz).option("blitz" -> perfs.blitz),
       (isStd && game.speed == Speed.Classical).option("classical" -> perfs.classical),
-      (isStd && game.speed == Speed.Correspondence).option("correspondence" -> perfs.correspondence)
+      (isStd &&
+          game.speed == Speed.Correspondence).option("correspondence" -> perfs.correspondence)
     ).flatten.map {
-        case (k, p) => k -> p.intRating
-      }
+      case (k, p) => k -> p.intRating
+    }
     val days = daysBetween(user.createdAt, game.updatedAt | game.createdAt)
-    coll.update(
-      BSONDocument("_id" -> user.id),
-      BSONDocument("$set" -> BSONDocument(changes.map {
-        case (perf, rating) => s"$perf.$days" -> BSONInteger(rating)
-      })),
-      upsert = true
-    ).void
+    coll
+      .update(
+        BSONDocument("_id" -> user.id),
+        BSONDocument("$set" -> BSONDocument(changes.map {
+      case (perf, rating) => s"$perf.$days" -> BSONInteger(rating)
+    })),
+        upsert = true
+      )
+      .void
   }
 
   def daysBetween(from: DateTime, to: DateTime): Int =

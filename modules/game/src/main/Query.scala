@@ -1,6 +1,6 @@
 package lila.game
 
-import chess.{ Color, Status }
+import chess.{Color, Status}
 import org.joda.time.DateTime
 import reactivemongo.bson._
 
@@ -10,7 +10,7 @@ import lila.user.User
 
 object Query {
 
-  import Game.{ BSONFields => F }
+  import Game.{BSONFields => F}
 
   val rated: Bdoc = F.rated $eq true
 
@@ -52,9 +52,7 @@ object Query {
   def user(u: User): Bdoc = F.playerUids $eq u.id
   def users(u: Seq[String]) = F.playerUids $in (u: _*)
 
-  val noAi: Bdoc = $doc(
-    "p0.ai" $exists false,
-    "p1.ai" $exists false)
+  val noAi: Bdoc = $doc("p0.ai" $exists false, "p1.ai" $exists false)
 
   def nowPlaying(u: String) = $doc(F.playingUids -> u)
 
@@ -70,11 +68,9 @@ object Query {
   )
 
   def opponents(u1: User, u2: User) =
-    $doc(F.playerUids.$all(List(u1, u2).sortBy(_.count.game).map(_.id):_*))
+    $doc(F.playerUids.$all(List(u1, u2).sortBy(_.count.game).map(_.id): _*))
 
-  val noProvisional: Bdoc = $doc(
-    "p0.p" $exists false,
-    "p1.p" $exists false)
+  val noProvisional: Bdoc = $doc("p0.p" $exists false, "p1.p" $exists false)
 
   def bothRatingsGreaterThan(v: Int) = $doc("p0.e" $gt v, "p1.e" $gt v)
 
@@ -92,13 +88,11 @@ object Query {
     sinceHordePawnsAreWhite
   )
 
-  lazy val sinceHordePawnsAreWhite: Bdoc =
-    F.createdAt $gt hordeWhitePawnsSince
+  lazy val sinceHordePawnsAreWhite: Bdoc = F.createdAt $gt hordeWhitePawnsSince
 
   val hordeWhitePawnsSince = new DateTime(2015, 4, 11, 10, 0)
 
-  val notFromPosition: Bdoc =
-    F.variant $ne chess.variant.FromPosition.id
+  val notFromPosition: Bdoc = F.variant $ne chess.variant.FromPosition.id
 
   def createdSince(d: DateTime): Bdoc =
     F.createdAt $gt d

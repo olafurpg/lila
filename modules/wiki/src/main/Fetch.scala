@@ -11,20 +11,17 @@ import Page.DefaultLang
 
 import lila.db.dsl._
 
-private[wiki] final class Fetch(
-    coll: Coll,
-    gitUrl: String,
-    markdownPath: String) {
+private[wiki] final class Fetch(coll: Coll, gitUrl: String, markdownPath: String) {
 
   import Page.PageBSONHandler
 
   def apply: Funit = getFiles flatMap { files =>
     val (defaultPages, langPages) = files.map(filePage).flatten partition (_.isDefaultLang)
     val newLangPages = (langPages map { page =>
-      defaultPages find (_.number == page.number) map { default =>
-        page.copy(slug = default.slug)
-      }
-    }).flatten
+          defaultPages find (_.number == page.number) map { default =>
+            page.copy(slug = default.slug)
+          }
+        }).flatten
     coll.remove($empty) >> (newLangPages ::: defaultPages).map { page =>
       coll.insert[Page](page)
     }.sequenceFu.void
@@ -39,11 +36,7 @@ private[wiki] final class Fetch(
   private def getFiles: Fu[List[File]] = Future {
     val dir = Files.createTempDir
     dir.deleteOnExit
-    Git.cloneRepository
-      .setURI(gitUrl)
-      .setDirectory(dir)
-      .setBare(false)
-      .call
+    Git.cloneRepository.setURI(gitUrl).setDirectory(dir).setBare(false).call
     dir.listFiles.toList filter (_.isFile) sortBy (_.getName)
   }
 

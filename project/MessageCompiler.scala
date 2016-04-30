@@ -1,5 +1,5 @@
 import _root_.java.io.File
-import _root_.java.nio.file.{ Files, StandardCopyOption }
+import _root_.java.nio.file.{Files, StandardCopyOption}
 import sbt._, Keys._
 
 object MessageCompiler {
@@ -10,7 +10,7 @@ object MessageCompiler {
     val registry = sourceFiles.toList.map { f =>
       f.split('.') match {
         case Array("messages", lang) => lang -> f
-        case Array("messages")       => "default" -> f
+        case Array("messages") => "default" -> f
       }
     }
     dst.mkdirs()
@@ -34,9 +34,10 @@ object MessageCompiler {
   private def writeRegistry(dst: File, registry: List[(String, String)]) = {
     val file = dst / "Registry.scala"
     printToFile(file) {
-      val content = registry.map {
-        case (lang, _) => s""""$lang"->$lang.load"""
-      } mkString ",\n"
+      val content =
+        registry.map {
+          case (lang, _) => s""""$lang"->$lang.load"""
+        } mkString ",\n"
       s"""package lila.i18n
 package db
 
@@ -51,9 +52,10 @@ object Registry {
 
   private def render(lang: String, pairs: List[(String, String)]) = {
     def quote(msg: String) = s"""""\"$msg""\""""
-    val content = pairs.map {
-      case (key, message) => s""""$key"->${quote(message)}"""
-    } mkString ",\n"
+    val content =
+      pairs.map {
+        case (key, message) => s""""$key"->${quote(message)}"""
+      } mkString ",\n"
     s"""package lila.i18n
 package db
 

@@ -6,11 +6,10 @@ import scala.concurrent.duration._
 
 import lila.db.dsl._
 
-private final class Monitor(
-    moveDb: MoveDB,
-    repo: FishnetRepo,
-    sequencer: lila.hub.FutureSequencer,
-    scheduler: lila.common.Scheduler) {
+private final class Monitor(moveDb: MoveDB,
+                            repo: FishnetRepo,
+                            sequencer: lila.hub.FutureSequencer,
+                            scheduler: lila.common.Scheduler) {
 
   private case class AnalysisMeta(time: Int, nodes: Int, nps: Int, depth: Int, pvSize: Int)
 
@@ -18,7 +17,8 @@ private final class Monitor(
     case (acc, a) => acc + f(a).getOrElse(0)
   }
 
-  private[fishnet] def analysis(work: Work.Analysis, client: Client, result: JsonApi.Request.PostAnalysis) = {
+  private[fishnet] def analysis(
+      work: Work.Analysis, client: Client, result: JsonApi.Request.PostAnalysis) = {
     Monitor.success(work, client)
 
     val monitor = lila.mon.fishnet.analysis by client.userId.value
@@ -28,17 +28,19 @@ private final class Monitor(
     result.engine.options.threadsInt foreach { monitor.threads(_) }
 
     monitor.totalSecond(sumOf(result.analysis)(_.time) * threads.|(1) / 1000)
-    monitor.totalMeganode(sumOf(result.analysis) { eval =>
-      eval.nodes ifFalse eval.mateFound
-    } / 1000000)
+    monitor.totalMeganode(
+      sumOf(result.analysis) { eval =>
+    eval.nodes ifFalse eval.mateFound
+  } / 1000000)
     monitor.totalPosition(result.analysis.size)
 
     val metaMovesSample = sample(result.analysis.drop(6).filterNot(_.mateFound), 100)
     def avgOf(f: JsonApi.Request.Evaluation => Option[Int]): Option[Int] = {
       val (sum, nb) = metaMovesSample.foldLeft(0 -> 0) {
-        case ((sum, nb), move) => f(move).fold(sum -> nb) { v =>
-          (sum + v, nb + 1)
-        }
+        case ((sum, nb), move) =>
+          f(move).fold(sum -> nb) { v =>
+            (sum + v, nb + 1)
+          }
       }
       (nb > 0) option (sum / nb)
     }
@@ -52,29 +54,29 @@ private final class Monitor(
   private def sample[A](elems: List[A], n: Int) =
     if (elems.size <= n) elems else scala.util.Random shuffle elems take n
 
-  private def monitorClients: Unit = repo.allRecentClients map { clients =>
+  private def monitorClients: Unit =
+    repo.allRecentClients map { clients =>
+      import lila.mon.fishnet.client._
 
-    import lila.mon.fishnet.client._
+      status enabled clients.count(_.enabled)
+      status disabled clients.count(_.disabled)
 
-    status enabled clients.count(_.enabled)
-    status disabled clients.count(_.disabled)
+      Client.Skill.all foreach { s =>
+        skill(s.key)(clients.count(_.skill == s))
+      }
 
-    Client.Skill.all foreach { s =>
-      skill(s.key)(clients.count(_.skill == s))
-    }
+      val instances = clients.flatMap(_.instance)
 
-    val instances = clients.flatMap(_.instance)
-
-    instances.map(_.version.value).groupBy(identity).mapValues(_.size) foreach {
-      case (v, nb) => version(v)(nb)
-    }
-    instances.map(_.engine.name).groupBy(identity).mapValues(_.size) foreach {
-      case (s, nb) => engine(s)(nb)
-    }
-    instances.map(_.python.value).groupBy(identity).mapValues(_.size) foreach {
-      case (s, nb) => python(s)(nb)
-    }
-  } andThenAnyway scheduleClients
+      instances.map(_.version.value).groupBy(identity).mapValues(_.size) foreach {
+        case (v, nb) => version(v)(nb)
+      }
+      instances.map(_.engine.name).groupBy(identity).mapValues(_.size) foreach {
+        case (s, nb) => engine(s)(nb)
+      }
+      instances.map(_.python.value).groupBy(identity).mapValues(_.size) foreach {
+        case (s, nb) => python(s)(nb)
+      }
+    } andThenAnyway scheduleClients
 
   private def monitorWork: Unit = {
 
@@ -85,9 +87,9 @@ private final class Monitor(
 
     sequencer.withQueueSize(lila.mon.fishnet.queue.sequencer(Analysis.key)(_))
 
-    repo.countAnalysis(acquired = false).map { queued(Analysis.key)(_) } >>
-      repo.countAnalysis(acquired = true).map { acquired(Analysis.key)(_) }
-
+    repo.countAnalysis(acquired = false).map { queued(Analysis.key)(_) } >> repo
+      .countAnalysis(acquired = true)
+      .map { acquired(Analysis.key)(_) }
   } andThenAnyway scheduleWork
 
   private def scheduleClients = scheduler.once(1 minute)(monitorClients)
@@ -101,9 +103,10 @@ object Monitor {
 
   private[fishnet] def move(work: Work.Move, client: Client) = {
     success(work, client)
-    if (work.level == 8) work.acquiredAt foreach { acquiredAt =>
-      lila.mon.fishnet.move.time(client.userId.value)(nowMillis - acquiredAt.getMillis)
-    }
+    if (work.level == 8)
+      work.acquiredAt foreach { acquiredAt =>
+        lila.mon.fishnet.move.time(client.userId.value)(nowMillis - acquiredAt.getMillis)
+      }
   }
 
   private def success(work: Work, client: Client) = {
@@ -118,12 +121,14 @@ object Monitor {
   }
 
   private[fishnet] def failure(work: Work, client: Client) = {
-    logger.warn(s"Received invalid ${work.skill} ${work.id} for ${work.game.id} by ${client.fullId}")
+    logger.warn(
+      s"Received invalid ${work.skill} ${work.id} for ${work.game.id} by ${client.fullId}")
     lila.mon.fishnet.client.result(client.userId.value, work.skill.key).failure()
   }
 
   private[fishnet] def weak(work: Work, client: Client, data: JsonApi.Request.PostAnalysis) = {
-    logger.warn(s"Received weak ${work.skill} ${work.id} (nodes: ${~data.medianNodes}) for ${work.game.id} by ${client.fullId}")
+    logger.warn(
+      s"Received weak ${work.skill} ${work.id} (nodes: ${~data.medianNodes}) for ${work.game.id} by ${client.fullId}")
     lila.mon.fishnet.client.result(client.userId.value, work.skill.key).weak()
   }
 
@@ -139,7 +144,8 @@ object Monitor {
   }
 
   private[fishnet] def notAcquired(work: Work, client: Client) = {
-    logger.info(s"Received unacquired ${work.skill} ${work.id} for ${work.game.id} by ${client.fullId}. Work current tries: ${work.tries} acquired: ${work.acquired}")
+    logger.info(
+      s"Received unacquired ${work.skill} ${work.id} for ${work.game.id} by ${client.fullId}. Work current tries: ${work.tries} acquired: ${work.acquired}")
     lila.mon.fishnet.client.result(client.userId.value, work.skill.key).notAcquired()
   }
 }

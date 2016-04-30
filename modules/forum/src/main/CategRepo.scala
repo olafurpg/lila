@@ -12,10 +12,14 @@ object CategRepo {
   def bySlug(slug: String) = coll.byId[Categ](slug)
 
   def withTeams(teams: Set[String]): Fu[List[Categ]] =
-    coll.find($or(
-      "team" $exists false,
-      $doc("team" -> $doc("$in" -> teams))
-    )).sort($sort asc "pos").cursor[Categ]().gather[List]()
+    coll
+      .find($or(
+          "team" $exists false,
+          $doc("team" -> $doc("$in" -> teams))
+        ))
+      .sort($sort asc "pos")
+      .cursor[Categ]()
+      .gather[List]()
 
   def nextPosition: Fu[Int] =
     coll.primitiveOne[Int]($empty, $sort desc "pos", "pos") map (~_ + 1)

@@ -7,9 +7,7 @@ import lila.hub.actorApi.message.LichessThread
 import lila.hub.actorApi.router._
 
 private[team] final class Notifier(
-    sender: String,
-    messenger: ActorSelection,
-    router: ActorSelection) {
+    sender: String, messenger: ActorSelection, router: ActorSelection) {
 
   import makeTimeout.large
 

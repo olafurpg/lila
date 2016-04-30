@@ -5,14 +5,13 @@ import ornicar.scalalib.Random
 
 import lila.user.User
 
-case class Report(
-    _id: String, // also the url slug
-    user: String, // the reportee
-    reason: String,
-    text: String,
-    processedBy: Option[String],
-    createdAt: DateTime,
-    createdBy: String) {
+case class Report(_id: String, // also the url slug
+                  user: String, // the reportee
+                  reason: String,
+                  text: String,
+                  processedBy: Option[String],
+                  createdAt: DateTime,
+                  createdBy: String) {
 
   def id = _id
   def slug = _id
@@ -43,16 +42,12 @@ object Report {
 
   case class WithUser(report: Report, user: User)
 
-  def make(
-    user: User,
-    reason: Reason,
-    text: String,
-    createdBy: User): Report = new Report(
-    _id = Random nextStringUppercase 8,
-    user = user.id,
-    reason = reason.name,
-    text = text,
-    processedBy = none,
-    createdAt = DateTime.now,
-    createdBy = createdBy.id)
+  def make(user: User, reason: Reason, text: String, createdBy: User): Report =
+    new Report(_id = Random nextStringUppercase 8,
+               user = user.id,
+               reason = reason.name,
+               text = text,
+               processedBy = none,
+               createdAt = DateTime.now,
+               createdBy = createdBy.id)
 }

@@ -5,10 +5,7 @@ import com.typesafe.config.Config
 
 import lila.common.PimpedConfig._
 
-final class Env(
-    config: Config,
-    scheduler: lila.common.Scheduler,
-    messageApi: lila.message.Api) {
+final class Env(config: Config, scheduler: lila.common.Scheduler, messageApi: lila.message.Api) {
 
   private val PrismicApiUrl = config getString "prismic.api_url"
   private val PrismicCollection = config getString "prismic.collection"
@@ -18,16 +15,12 @@ final class Env(
 
   val RssEmail = config getString "rss.email"
 
-  lazy val api = new BlogApi(
-    prismicUrl = PrismicApiUrl,
-    collection = PrismicCollection)
+  lazy val api = new BlogApi(prismicUrl = PrismicApiUrl, collection = PrismicCollection)
 
   lazy val lastPostCache = new LastPostCache(api, LastPostCacheTtl, PrismicCollection)
 
   private lazy val notifier = new Notifier(
-    blogApi = api,
-    messageApi = messageApi,
-    lichessUserId = NotifySender)
+    blogApi = api, messageApi = messageApi, lichessUserId = NotifySender)
 
   def cli = new lila.common.Cli {
     def process = {
@@ -39,8 +32,8 @@ final class Env(
 
 object Env {
 
-  lazy val current: Env = "blog" boot new Env(
-    config = lila.common.PlayApp loadConfig "blog",
-    scheduler = lila.common.PlayApp.scheduler,
-    messageApi = lila.message.Env.current.api)
+  lazy val current: Env =
+    "blog" boot new Env(config = lila.common.PlayApp loadConfig "blog",
+                        scheduler = lila.common.PlayApp.scheduler,
+                        messageApi = lila.message.Env.current.api)
 }

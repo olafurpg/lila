@@ -7,7 +7,7 @@ import akka.event.LoggingReceive
 import akka.pattern.ask
 import akka.util.Timeout
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Token Bucket implementation as described here http://en.wikipedia.org/wiki/Token_bucket
@@ -18,7 +18,6 @@ import scala.concurrent.{ ExecutionContext, Future }
  * - Return a consumer, not an actor ref
  * - Removed overflow protection
  */
-
 /**
  * For mocking the current time.
  */

@@ -1,7 +1,7 @@
 package lila.qa
 
 import lila.security.Granter
-import lila.user.{ User, UserContext }
+import lila.user.{User, UserContext}
 import org.joda.time.DateTime
 
 object QaAuth {

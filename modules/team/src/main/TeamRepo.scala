@@ -1,11 +1,11 @@
 package lila.team
 
-import org.joda.time.{ DateTime, Period }
+import org.joda.time.{DateTime, Period}
 import reactivemongo.api._
 import reactivemongo.bson._
 
 import lila.db.dsl._
-import lila.user.{ User, UserRepo }
+import lila.user.{User, UserRepo}
 
 object TeamRepo {
 
@@ -30,10 +30,11 @@ object TeamRepo {
     coll.primitiveOne[String]($id(id), "name")
 
   def userHasCreatedSince(userId: String, duration: Period): Fu[Boolean] =
-    coll.exists($doc(
-      "createdAt" $gt DateTime.now.minus(duration),
-      "createdBy" -> userId
-    ))
+    coll.exists(
+      $doc(
+        "createdAt" $gt DateTime.now.minus(duration),
+        "createdBy" -> userId
+      ))
 
   def ownerOf(teamId: String): Fu[Option[String]] =
     coll.primitiveOne[String]($id(teamId), "createdBy")
@@ -46,9 +47,10 @@ object TeamRepo {
   def disable(team: Team) = coll.updateField($id(team.id), "enabled", false)
 
   def addRequest(teamId: String, request: Request): Funit =
-    coll.update(
-      $id(teamId) ++ $doc("requests.user" $ne request.user),
-      $push("requests", request.user)).void
+    coll
+      .update(
+        $id(teamId) ++ $doc("requests.user" $ne request.user), $push("requests", request.user))
+      .void
 
   val enabledQuery = $doc("enabled" -> true)
 

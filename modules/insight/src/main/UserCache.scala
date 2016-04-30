@@ -6,11 +6,10 @@ import reactivemongo.bson._
 
 import lila.db.dsl._
 
-case class UserCache(
-    _id: String, // user id
-    count: Int, // nb insight entries
-    ecos: Set[String],
-    date: DateTime) {
+case class UserCache(_id: String, // user id
+                     count: Int, // nb insight entries
+                     ecos: Set[String],
+                     date: DateTime) {
 
   def id = _id
 }

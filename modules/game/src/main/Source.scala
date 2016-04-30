@@ -19,7 +19,9 @@ object Source {
   case object Relay extends Source(id = 11)
 
   val all = List(Lobby, Friend, Ai, Api, Tournament, Position, Import, Simul, Relay)
-  val byId = all map { v => (v.id, v) } toMap
+  val byId = all map { v =>
+    (v.id, v)
+  } toMap
 
   val searchable = List(Lobby, Friend, Ai, Position, Import, Tournament, Simul)
 

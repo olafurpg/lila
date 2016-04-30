@@ -1,20 +1,20 @@
 package lila.relation
 
-import akka.actor.{ Actor, ActorSelection }
-import akka.pattern.{ ask, pipe }
+import akka.actor.{Actor, ActorSelection}
+import akka.pattern.{ask, pipe}
 import play.api.libs.json.Json
 import scala.concurrent.duration._
 
 import actorApi._
 import lila.common.LightUser
 import lila.hub.actorApi.relation._
-import lila.hub.actorApi.{ SendTo, SendTos }
+import lila.hub.actorApi.{SendTo, SendTos}
 import makeTimeout.short
 
-private[relation] final class RelationActor(
-    getOnlineUserIds: () => Set[String],
-    lightUser: String => Option[LightUser],
-    api: RelationApi) extends Actor {
+private[relation] final class RelationActor(getOnlineUserIds: () => Set[String],
+                                            lightUser: String => Option[LightUser],
+                                            api: RelationApi)
+    extends Actor {
 
   private val bus = context.system.lilaBus
 
@@ -25,10 +25,11 @@ private[relation] final class RelationActor(
     case GetOnlineFriends(userId) => onlineFriends(userId) pipeTo sender
 
     // triggers following reloading for this user id
-    case ReloadOnlineFriends(userId) => onlineFriends(userId) foreach {
-      case OnlineFriends(users) =>
-        bus.publish(SendTo(userId, "following_onlines", users.map(_.titleName)), 'users)
-    }
+    case ReloadOnlineFriends(userId) =>
+      onlineFriends(userId) foreach {
+        case OnlineFriends(users) =>
+          bus.publish(SendTo(userId, "following_onlines", users.map(_.titleName)), 'users)
+      }
 
     case NotifyMovement =>
       val prevIds = onlineIds

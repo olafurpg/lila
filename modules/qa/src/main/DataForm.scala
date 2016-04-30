@@ -5,57 +5,54 @@ import play.api.data.Forms._
 import play.api.i18n.Lang
 
 private[qa] final class DataForm(
-    val captcher: akka.actor.ActorSelection,
-    detectLanguage: lila.common.DetectLanguage) extends lila.hub.CaptchedForm {
+    val captcher: akka.actor.ActorSelection, detectLanguage: lila.common.DetectLanguage)
+    extends lila.hub.CaptchedForm {
 
   lazy val question = Form(
     mapping(
-      "title" -> nonEmptyText(minLength = 10, maxLength = 150)
-        .verifying(languageMessage, validateLanguage _),
-      "body" -> nonEmptyText(minLength = 10, maxLength = 10000)
-        .verifying(languageMessage, validateLanguage _),
+      "title" -> nonEmptyText(minLength = 10, maxLength = 150).verifying(languageMessage,
+                                                                         validateLanguage _),
+      "body" -> nonEmptyText(minLength = 10, maxLength = 10000).verifying(languageMessage,
+                                                                          validateLanguage _),
       "hidden-tags" -> text,
       "gameId" -> text,
       "move" -> text
-    )(QuestionData.apply)(QuestionData.unapply)
-      .verifying(captchaFailMessage, validateCaptcha _))
+    )(QuestionData.apply)(QuestionData.unapply).verifying(captchaFailMessage, validateCaptcha _))
 
-  def editQuestion(q: Question) = question fill QuestionData(
-    title = q.title,
-    body = q.body,
-    `hidden-tags` = q.tags mkString ",",
-    gameId = "",
-    move = "")
+  def editQuestion(q: Question) =
+    question fill QuestionData(title = q.title,
+                               body = q.body,
+                               `hidden-tags` = q.tags mkString ",",
+                               gameId = "",
+                               move = "")
 
   lazy val answer = Form(
     mapping(
-      "body" -> nonEmptyText(minLength = 30)
-        .verifying(languageMessage, validateLanguage _),
+      "body" -> nonEmptyText(minLength = 30).verifying(languageMessage, validateLanguage _),
       "gameId" -> text,
       "move" -> text
-    )(AnswerData.apply)(AnswerData.unapply)
-      .verifying(captchaFailMessage, validateCaptcha _))
+    )(AnswerData.apply)(AnswerData.unapply).verifying(captchaFailMessage, validateCaptcha _))
 
   lazy val editAnswer = Form(
     single(
-      "body" -> nonEmptyText(minLength = 30)
-        .verifying(languageMessage, validateLanguage _)
+      "body" -> nonEmptyText(minLength = 30).verifying(languageMessage, validateLanguage _)
     ))
 
-  lazy val moveAnswer = Form(single(
-    "to" -> nonEmptyText
-  ))
+  lazy val moveAnswer = Form(
+    single(
+      "to" -> nonEmptyText
+    ))
 
   lazy val comment = Form(
     mapping(
-      "body" -> nonEmptyText(minLength = 20)
-        .verifying(languageMessage, validateLanguage _)
+      "body" -> nonEmptyText(minLength = 20).verifying(languageMessage, validateLanguage _)
     )(CommentData.apply)(CommentData.unapply)
   )
 
-  val vote = Form(single(
-    "vote" -> number
-  ))
+  val vote = Form(
+    single(
+      "vote" -> number
+    ))
 
   private val languageMessage = "I didn't understand that. Is it written in English?"
 
@@ -64,18 +61,11 @@ private[qa] final class DataForm(
 }
 
 private[qa] case class QuestionData(
-    title: String,
-    body: String,
-    `hidden-tags`: String,
-    gameId: String,
-    move: String) {
+    title: String, body: String, `hidden-tags`: String, gameId: String, move: String) {
 
   def tags = `hidden-tags`.split(',').toList.map(_.trim.toLowerCase).filter(_.nonEmpty)
 }
 
-private[qa] case class AnswerData(
-  body: String,
-  gameId: String,
-  move: String)
+private[qa] case class AnswerData(body: String, gameId: String, move: String)
 
 private[qa] case class CommentData(body: String)

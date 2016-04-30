@@ -5,13 +5,12 @@ import reactivemongo.bson._
 
 import lila.common.PimpedJson._
 import lila.db.dsl._
-import lila.user.{ User, UserRepo }
+import lila.user.{User, UserRepo}
 
-case class UserSpy(
-    ips: List[UserSpy.IPData],
-    uas: List[String],
-    usersSharingIp: List[User],
-    usersSharingFingerprint: List[User]) {
+case class UserSpy(ips: List[UserSpy.IPData],
+                   uas: List[String],
+                   usersSharingIp: List[User],
+                   usersSharingFingerprint: List[User]) {
 
   import UserSpy.OtherUser
 
@@ -39,23 +38,26 @@ object UserSpy {
 
   case class IPData(ip: IP, blocked: Boolean, location: Location)
 
-  private[security] def apply(firewall: Firewall, geoIP: GeoIP)(coll: Coll)(userId: String): Fu[UserSpy] = for {
-    user ← UserRepo named userId flatten "[spy] user not found"
-    infos ← Store.findInfoByUser(user.id)
-    ips = infos.map(_.ip).distinct
-    blockedIps ← (ips map firewall.blocksIp).sequenceFu
-    locations <- scala.concurrent.Future {
-      ips map geoIP.orUnknown
-    }
-    sharingIp ← exploreSimilar("ip")(user)(coll)
-    sharingFingerprint ← exploreSimilar("fp")(user)(coll)
-  } yield UserSpy(
-    ips = ips zip blockedIps zip locations map {
-      case ((ip, blocked), location) => IPData(ip, blocked, location)
-    },
-    uas = infos.map(_.ua).distinct,
-    usersSharingIp = (sharingIp + user).toList.sortBy(-_.createdAt.getMillis),
-    usersSharingFingerprint = (sharingFingerprint + user).toList.sortBy(-_.createdAt.getMillis))
+  private[security] def apply(firewall: Firewall, geoIP: GeoIP)(coll: Coll)(
+      userId: String): Fu[UserSpy] =
+    for {
+      user ← UserRepo named userId flatten "[spy] user not found"
+      infos ← Store.findInfoByUser(user.id)
+      ips = infos.map(_.ip).distinct
+      blockedIps ← (ips map firewall.blocksIp).sequenceFu
+      locations <- scala.concurrent.Future {
+        ips map geoIP.orUnknown
+      }
+      sharingIp ← exploreSimilar("ip")(user)(coll)
+      sharingFingerprint ← exploreSimilar("fp")(user)(coll)
+    } yield
+      UserSpy(ips = ips zip blockedIps zip locations map {
+                case ((ip, blocked), location) => IPData(ip, blocked, location)
+              },
+              uas = infos.map(_.ua).distinct,
+              usersSharingIp = (sharingIp + user).toList.sortBy(-_.createdAt.getMillis),
+              usersSharingFingerprint = (sharingFingerprint +
+                    user).toList.sortBy(-_.createdAt.getMillis))
 
   private def exploreSimilar(field: String)(user: User)(implicit coll: Coll): Fu[Set[User]] =
     nextValues(field)(user) flatMap { nValues =>
@@ -63,22 +65,25 @@ object UserSpy {
     }
 
   private def nextValues(field: String)(user: User)(implicit coll: Coll): Fu[Set[Value]] =
-    coll.find(
-      $doc("user" -> user.id),
-      $doc(field -> true)
-    ).cursor[Bdoc]().gather[List]() map {
-        _.flatMap(_.getAs[Value](field)).toSet
-      }
+    coll
+      .find(
+        $doc("user" -> user.id),
+        $doc(field -> true)
+      )
+      .cursor[Bdoc]()
+      .gather[List]() map {
+      _.flatMap(_.getAs[Value](field)).toSet
+    }
 
-  private def nextUsers(field: String)(values: Set[Value], user: User)(implicit coll: Coll): Fu[Set[User]] =
+  private def nextUsers(field: String)(values: Set[Value], user: User)(
+      implicit coll: Coll): Fu[Set[User]] =
     values.nonEmpty ?? {
       coll.distinct("user",
-        $doc(
-          field -> $doc("$in" -> values),
-          "user" -> $doc("$ne" -> user.id)
-        ).some
-      ) map lila.db.BSON.asStrings flatMap { userIds =>
-          userIds.nonEmpty ?? (UserRepo byIds userIds) map (_.toSet)
-        }
+                    $doc(
+                      field -> $doc("$in" -> values),
+                      "user" -> $doc("$ne" -> user.id)
+                    ).some) map lila.db.BSON.asStrings flatMap { userIds =>
+        userIds.nonEmpty ?? (UserRepo byIds userIds) map (_.toSet)
+      }
     }
 }

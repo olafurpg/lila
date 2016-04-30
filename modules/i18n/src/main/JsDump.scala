@@ -4,12 +4,9 @@ import java.io._
 import scala.concurrent.Future
 
 import play.api.i18n.Lang
-import play.api.libs.json.{ JsString, JsObject }
+import play.api.libs.json.{JsString, JsObject}
 
-private[i18n] final class JsDump(
-    path: String,
-    pool: I18nPool,
-    keys: I18nKeys) {
+private[i18n] final class JsDump(path: String, pool: I18nPool, keys: I18nKeys) {
 
   def keysToObject(keys: Seq[I18nKey], lang: Lang) = JsObject {
     keys.map { k =>
@@ -23,11 +20,12 @@ private[i18n] final class JsDump(
     }
   }
 
-  def apply: Funit = Future {
-    pathFile.mkdir
-    writeRefs
-    writeFullJson
-  } void
+  def apply: Funit =
+    Future {
+      pathFile.mkdir
+      writeRefs
+      writeFullJson
+    } void
 
   private val pathFile = new File(path)
 
@@ -42,13 +40,15 @@ private[i18n] final class JsDump(
     }.mkString("{", ",", "}")
 
   private def writeRefs {
-    val code = pool.names.toList.sortBy(_._1).map {
-      case (code, name) => s"""["$code","$name"]"""
-    }.mkString("[", ",", "]")
+    val code = pool.names.toList
+      .sortBy(_._1)
+      .map {
+        case (code, name) => s"""["$code","$name"]"""
+      }
+      .mkString("[", ",", "]")
     val file = new File("%s/refs.json".format(pathFile.getCanonicalPath))
     val out = new PrintWriter(file)
-    try { out.print(code) }
-    finally { out.close }
+    try { out.print(code) } finally { out.close }
   }
 
   private def writeFullJson {
@@ -56,8 +56,7 @@ private[i18n] final class JsDump(
       val code = dumpFromKey(keys.keys, lang)
       val file = new File("%s/%s.all.json".format(pathFile.getCanonicalPath, lang.language))
       val out = new PrintWriter(file)
-      try { out.print(code) }
-      finally { out.close }
+      try { out.print(code) } finally { out.close }
     }
   }
 

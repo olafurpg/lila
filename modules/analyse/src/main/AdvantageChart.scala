@@ -18,9 +18,7 @@ object AdvantageChart {
       advice.??(" " + _.makeComment(withEval = true, withBestMove = false))
     )
 
-    def point(name: String, y: Int) = Json.obj(
-      "name" -> name,
-      "y" -> scale(y))
+    def point(name: String, y: Int) = Json.obj("name" -> name, "y" -> scale(y))
 
     Json stringify {
       Json toJson {
@@ -28,7 +26,8 @@ object AdvantageChart {
           case (info, advice) =>
             (info.score, info.mate) match {
               case (Some(score), _) => point(move(info, advice), score.centipawns)
-              case (_, Some(mate)) => point(move(info, advice), {
+              case (_, Some(mate)) =>
+                point(move(info, advice), {
                 val mateDelta = math.abs(mate)
                 val whiteWins = mate > 0
                 whiteWins.fold(max - mateDelta, mateDelta - max)

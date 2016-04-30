@@ -2,8 +2,8 @@ package lila
 
 import scala.concurrent.Future
 
-import kamon.Kamon.{ metrics, tracer }
-import kamon.trace.{ TraceContext, Segment }
+import kamon.Kamon.{metrics, tracer}
+import kamon.trace.{TraceContext, Segment}
 import kamon.util.RelativeNanoTimestamp
 
 object mon {
@@ -325,17 +325,19 @@ object mon {
   private def inc(name: String): Inc = metrics.counter(name).increment _
   private def incX(name: String): IncX = {
     val count = metrics.counter(name)
-    value => {
-      if (value < 0) logger.warn(s"Negative increment value: $name=$value")
-      else count.increment(value)
-    }
+    value =>
+      {
+        if (value < 0) logger.warn(s"Negative increment value: $name=$value")
+        else count.increment(value)
+      }
   }
   private def rec(name: String): Rec = {
     val hist = metrics.histogram(name)
-    value => {
-      if (value < 0) logger.warn(s"Negative histogram value: $name=$value")
-      else hist.record(value)
-    }
+    value =>
+      {
+        if (value < 0) logger.warn(s"Negative histogram value: $name=$value")
+        else hist.record(value)
+      }
   }
 
   final class Measurement(since: Long, path: RecPath) {
@@ -355,9 +357,7 @@ object mon {
     def finish(): Unit
   }
 
-  private final class KamonTrace(
-      context: TraceContext,
-      firstSegment: Segment) extends Trace {
+  private final class KamonTrace(context: TraceContext, firstSegment: Segment) extends Trace {
 
     def finishFirstSegment() = firstSegment.finish()
 
@@ -371,12 +371,11 @@ object mon {
   }
 
   private def makeTrace(name: String, firstName: String = "first"): Trace = {
-    val context = tracer.newContext(
-      name = name,
-      token = None,
-      timestamp = RelativeNanoTimestamp.now,
-      isOpen = true,
-      isLocal = false)
+    val context = tracer.newContext(name = name,
+                                    token = None,
+                                    timestamp = RelativeNanoTimestamp.now,
+                                    isOpen = true,
+                                    isLocal = false)
     val firstSegment = context.startSegment(firstName, "logic", "mon")
     new KamonTrace(context, firstSegment)
   }

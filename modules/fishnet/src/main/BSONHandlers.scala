@@ -4,16 +4,20 @@ import lila.db.BSON
 import lila.db.BSON.{BSONJodaDateTimeHandler, stringAnyValHandler}
 import reactivemongo.bson._
 
-import chess.format.{ Uci, FEN }
+import chess.format.{Uci, FEN}
 import chess.variant.Variant
 
 private object BSONHandlers {
 
   implicit val ClientKeyBSONHandler = stringAnyValHandler[Client.Key](_.value, Client.Key.apply)
-  implicit val ClientVersionBSONHandler = stringAnyValHandler[Client.Version](_.value, Client.Version.apply)
-  implicit val ClientPythonBSONHandler = stringAnyValHandler[Client.Python](_.value, Client.Python.apply)
-  implicit val ClientUserIdBSONHandler = stringAnyValHandler[Client.UserId](_.value, Client.UserId.apply)
-  implicit val ClientIpAddressBSONHandler = stringAnyValHandler[Client.IpAddress](_.value, Client.IpAddress.apply)
+  implicit val ClientVersionBSONHandler =
+    stringAnyValHandler[Client.Version](_.value, Client.Version.apply)
+  implicit val ClientPythonBSONHandler =
+    stringAnyValHandler[Client.Python](_.value, Client.Python.apply)
+  implicit val ClientUserIdBSONHandler =
+    stringAnyValHandler[Client.UserId](_.value, Client.UserId.apply)
+  implicit val ClientIpAddressBSONHandler =
+    stringAnyValHandler[Client.IpAddress](_.value, Client.IpAddress.apply)
 
   implicit val ClientSkillBSONHandler = new BSONHandler[BSONString, Client.Skill] {
     def read(x: BSONString) = Client.Skill byKey x.value err s"Invalid client skill ${x.value}"

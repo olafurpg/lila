@@ -5,7 +5,7 @@ import scala.concurrent.Future
 import chess.Color
 import play.api.libs.json.Json
 
-import lila.game.{ Game, Namer }
+import lila.game.{Game, Namer}
 
 final class TimeChart(game: Game, moves: List[String]) {
 
@@ -39,7 +39,8 @@ final class TimeChart(game: Game, moves: List[String]) {
   }
 
   private val moveTimes = game.moveTimesInSeconds
-  private val indexedMoveTimes = game.moveTimesInSeconds.zipWithIndex map {
-    case (mt, i) => (mt, i + game.startedAtTurn)
-  }
+  private val indexedMoveTimes =
+    game.moveTimesInSeconds.zipWithIndex map {
+      case (mt, i) => (mt, i + game.startedAtTurn)
+    }
 }

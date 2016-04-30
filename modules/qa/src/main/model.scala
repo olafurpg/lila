@@ -4,20 +4,19 @@ import org.joda.time._
 
 import lila.user.User
 
-case class Question(
-    _id: QuestionId, // autoincrement integer
-    userId: String,
-    title: String,
-    body: String, // markdown
-    tags: List[String],
-    vote: Vote,
-    comments: List[Comment],
-    views: Int,
-    answers: Int,
-    createdAt: DateTime,
-    updatedAt: DateTime,
-    acceptedAt: Option[DateTime],
-    editedAt: Option[DateTime]) {
+case class Question(_id: QuestionId, // autoincrement integer
+                    userId: String,
+                    title: String,
+                    body: String, // markdown
+                    tags: List[String],
+                    vote: Vote,
+                    comments: List[Comment],
+                    views: Int,
+                    answers: Int,
+                    createdAt: DateTime,
+                    updatedAt: DateTime,
+                    acceptedAt: Option[DateTime],
+                    editedAt: Option[DateTime]) {
 
   def id = _id
 
@@ -36,16 +35,15 @@ case class Question(
   def accepted = acceptedAt.isDefined
 }
 
-case class Answer(
-    _id: AnswerId,
-    questionId: QuestionId,
-    userId: String,
-    body: String,
-    vote: Vote,
-    comments: List[Comment],
-    acceptedAt: Option[DateTime],
-    createdAt: DateTime,
-    editedAt: Option[DateTime]) {
+case class Answer(_id: AnswerId,
+                  questionId: QuestionId,
+                  userId: String,
+                  body: String,
+                  vote: Vote,
+                  comments: List[Comment],
+                  acceptedAt: Option[DateTime],
+                  createdAt: DateTime,
+                  editedAt: Option[DateTime]) {
 
   def id = _id
 
@@ -74,11 +72,10 @@ case class Vote(up: Set[String], down: Set[String], score: Int) {
   private def computeScore = copy(score = up.size - down.size)
 }
 
-case class Comment(
-  id: CommentId, // random string
-  userId: String,
-  body: String,
-  createdAt: DateTime)
+case class Comment(id: CommentId, // random string
+                   userId: String,
+                   body: String,
+                   createdAt: DateTime)
 
 object Comment {
 

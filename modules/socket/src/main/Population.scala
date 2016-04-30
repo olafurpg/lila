@@ -2,7 +2,7 @@ package lila.socket
 
 import akka.actor._
 
-import actorApi.{ SocketEnter, SocketLeave, PopulationTell, NbMembers }
+import actorApi.{SocketEnter, SocketLeave, PopulationTell, NbMembers}
 
 private[socket] final class Population extends Actor {
 
@@ -20,11 +20,11 @@ private[socket] final class Population extends Actor {
 
   def receive = {
 
-    case _: SocketEnter[_] =>
+    case _: SocketEnter [_] =>
       nb = nb + 1
       lila.mon.socket.open()
 
-    case _: SocketLeave[_] =>
+    case _: SocketLeave [_] =>
       nb = nb - 1
       lila.mon.socket.close()
 

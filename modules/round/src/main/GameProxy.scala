@@ -1,7 +1,7 @@
 package lila.round
 
 import chess.Color
-import lila.game.{ Game, Progress, Pov, GameRepo }
+import lila.game.{Game, Progress, Pov, GameRepo}
 import lila.memo.AsyncCache
 import ornicar.scalalib.Zero
 
@@ -38,7 +38,7 @@ private final class GameProxy(id: String) {
     _ flatMap { Pov(_, playerId) }
   }
 
-  def withGame[A: Zero](f: Game => Fu[A]): Fu[A] = game.flatMap(_ ?? f)
+  def withGame[A : Zero](f: Game => Fu[A]): Fu[A] = game.flatMap(_ ?? f)
 
   // internals
 

@@ -1,13 +1,14 @@
 package lila.api
 
 import akka.actor.ActorSelection
-import akka.pattern.{ ask, pipe }
+import akka.pattern.{ask, pipe}
 import play.twirl.api.Html
 
-import lila.hub.actorApi.{ RemindDeploy, Deploy }
+import lila.hub.actorApi.{RemindDeploy, Deploy}
 import makeTimeout.short
 
-private[api] final class Cli(bus: lila.common.Bus, renderer: ActorSelection) extends lila.common.Cli {
+private[api] final class Cli(bus: lila.common.Bus, renderer: ActorSelection)
+    extends lila.common.Cli {
 
   private val logger = lila.log("cli")
 
@@ -18,7 +19,7 @@ private[api] final class Cli(bus: lila.common.Bus, renderer: ActorSelection) ext
   }
 
   def process = {
-    case "deploy" :: "pre" :: Nil  => remindDeploy(lila.hub.actorApi.RemindDeployPre)
+    case "deploy" :: "pre" :: Nil => remindDeploy(lila.hub.actorApi.RemindDeployPre)
     case "deploy" :: "post" :: Nil => remindDeploy(lila.hub.actorApi.RemindDeployPost)
   }
 
@@ -36,19 +37,5 @@ private[api] final class Cli(bus: lila.common.Bus, renderer: ActorSelection) ext
   }
 
   private def processors =
-    lila.user.Env.current.cli.process orElse
-      lila.security.Env.current.cli.process orElse
-      lila.wiki.Env.current.cli.process orElse
-      lila.i18n.Env.current.cli.process orElse
-      lila.game.Env.current.cli.process orElse
-      lila.gameSearch.Env.current.cli.process orElse
-      lila.teamSearch.Env.current.cli.process orElse
-      lila.forumSearch.Env.current.cli.process orElse
-      lila.team.Env.current.cli.process orElse
-      lila.puzzle.Env.current.cli.process orElse
-      lila.tournament.Env.current.cli.process orElse
-      lila.explorer.Env.current.cli.process orElse
-      lila.fishnet.Env.current.cli.process orElse
-      lila.blog.Env.current.cli.process orElse
-      process
+    lila.user.Env.current.cli.process orElse lila.security.Env.current.cli.process orElse lila.wiki.Env.current.cli.process orElse lila.i18n.Env.current.cli.process orElse lila.game.Env.current.cli.process orElse lila.gameSearch.Env.current.cli.process orElse lila.teamSearch.Env.current.cli.process orElse lila.forumSearch.Env.current.cli.process orElse lila.team.Env.current.cli.process orElse lila.puzzle.Env.current.cli.process orElse lila.tournament.Env.current.cli.process orElse lila.explorer.Env.current.cli.process orElse lila.fishnet.Env.current.cli.process orElse lila.blog.Env.current.cli.process orElse process
 }

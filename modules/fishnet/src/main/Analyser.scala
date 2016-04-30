@@ -2,16 +2,15 @@ package lila.fishnet
 
 import org.joda.time.DateTime
 
-import chess.format.{ FEN, Forsyth }
+import chess.format.{FEN, Forsyth}
 
-import lila.game.{ Game, GameRepo, UciMemo }
+import lila.game.{Game, GameRepo, UciMemo}
 import lila.analyse.AnalysisRepo
 
-final class Analyser(
-    repo: FishnetRepo,
-    uciMemo: UciMemo,
-    sequencer: lila.hub.FutureSequencer,
-    limiter: Limiter) {
+final class Analyser(repo: FishnetRepo,
+                     uciMemo: UciMemo,
+                     sequencer: lila.hub.FutureSequencer,
+                     limiter: Limiter) {
 
   val maxPlies = 200
 
@@ -32,7 +31,7 @@ final class Analyser(
                   // queued for someone else, do nothing
                   case Some(similar) => funit
                   // first request, store
-                  case _             => repo addAnalysis work
+                  case _ => repo addAnalysis work
                 }
               }
             }
@@ -49,19 +48,18 @@ final class Analyser(
 
   private def makeWork(game: Game, sender: Work.Sender): Fu[Work.Analysis] =
     GameRepo.initialFen(game) zip uciMemo.get(game) map {
-      case (initialFen, moves) => Work.Analysis(
-        _id = Work.makeId,
-        sender = sender,
-        game = Work.Game(
-          id = game.id,
-          initialFen = initialFen map FEN.apply,
-          variant = game.variant,
-          moves = moves.take(maxPlies) mkString " "),
-        startPly = game.startedAtTurn,
-        nbPly = game.turns,
-        tries = 0,
-        lastTryByKey = none,
-        acquired = none,
-        createdAt = DateTime.now)
+      case (initialFen, moves) =>
+        Work.Analysis(_id = Work.makeId,
+                      sender = sender,
+                      game = Work.Game(id = game.id,
+                                       initialFen = initialFen map FEN.apply,
+                                       variant = game.variant,
+                                       moves = moves.take(maxPlies) mkString " "),
+                      startPly = game.startedAtTurn,
+                      nbPly = game.turns,
+                      tries = 0,
+                      lastTryByKey = none,
+                      acquired = none,
+                      createdAt = DateTime.now)
     }
 }

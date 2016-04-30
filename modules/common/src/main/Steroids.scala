@@ -4,42 +4,16 @@ import ornicar.scalalib
 import ornicar.scalalib.Zero
 
 trait Steroids
-
-  extends scalalib.Validation
-  with scalalib.Common
-  with scalalib.Regex
-  with scalalib.OrnicarMonoid.Instances
-  with scalalib.Zero.Syntax
-  with scalalib.Zero.Instances
-  with scalalib.OrnicarOption
-  with scalalib.OrnicarNonEmptyList
-
-  with scalaz.std.OptionInstances
-  with scalaz.std.OptionFunctions
-  with scalaz.syntax.std.ToOptionIdOps
-
-  with scalaz.std.ListInstances
-  with scalaz.std.ListFunctions
-  with scalaz.syntax.std.ToListOps
-
-  with scalaz.std.StringInstances
-
-  with scalaz.std.TupleInstances
-
-  with scalaz.syntax.ToIdOps
-  with scalaz.syntax.ToEqualOps
-  with scalaz.syntax.ToApplyOps
-  with scalaz.syntax.ToValidationOps
-  with scalaz.syntax.ToFunctorOps
-  with scalaz.syntax.ToMonoidOps
-  with scalaz.syntax.ToTraverseOps
-  with scalaz.syntax.ToShowOps
-
-  with BooleanSteroids
-  with OptionSteroids
-  with ListSteroids
-
-  with JodaTimeSteroids
+    extends scalalib.Validation with scalalib.Common with scalalib.Regex
+    with scalalib.OrnicarMonoid.Instances with scalalib.Zero.Syntax with scalalib.Zero.Instances
+    with scalalib.OrnicarOption with scalalib.OrnicarNonEmptyList with scalaz.std.OptionInstances
+    with scalaz.std.OptionFunctions with scalaz.syntax.std.ToOptionIdOps
+    with scalaz.std.ListInstances with scalaz.std.ListFunctions with scalaz.syntax.std.ToListOps
+    with scalaz.std.StringInstances with scalaz.std.TupleInstances with scalaz.syntax.ToIdOps
+    with scalaz.syntax.ToEqualOps with scalaz.syntax.ToApplyOps with scalaz.syntax.ToValidationOps
+    with scalaz.syntax.ToFunctorOps with scalaz.syntax.ToMonoidOps with scalaz.syntax.ToTraverseOps
+    with scalaz.syntax.ToShowOps with BooleanSteroids with OptionSteroids with ListSteroids
+    with JodaTimeSteroids
 
 trait JodaTimeSteroids {
   import org.joda.time.DateTime
@@ -52,12 +26,13 @@ trait JodaTimeSteroids {
 
 trait ListSteroids {
 
-  import scala.util.{ Try, Success }
+  import scala.util.{Try, Success}
 
   implicit final class LilaPimpedTryList[A](list: List[Try[A]]) {
-    def sequence: Try[List[A]] = (Try(List[A]()) /: list) {
-      (a, b) => a flatMap (c => b map (d => d :: c))
-    } map (_.reverse)
+    def sequence: Try[List[A]] =
+      (Try(List[A]()) /: list) { (a, b) =>
+        a flatMap (c => b map (d => d :: c))
+      } map (_.reverse)
   }
   implicit final class LilaPimpedList[A](list: List[A]) {
     def sortLike[B](other: List[B], f: A => B): List[A] = list.sortWith {
@@ -94,10 +69,10 @@ trait OptionSteroids {
    */
   implicit final class LilaPimpedOption[A](self: Option[A]) {
 
-    import scalaz.std.{ option => o }
+    import scalaz.std.{option => o}
 
     def fold[X](some: A => X, none: => X): X = self match {
-      case None    => none
+      case None => none
       case Some(a) => some(a)
     }
 

@@ -41,19 +41,25 @@ trait StringHelper { self: NumberHelper =>
 
   def markdownLinks(text: String) = Html {
     nl2br {
-      markdownLinkRegex.replaceAllIn(escape(text), m => {
-        s"""<a href="${m group 2}">${m group 1}</a>"""
-      })
+      markdownLinkRegex.replaceAllIn(escape(text),
+                                     m =>
+                                       {
+                                         s"""<a href="${m group 2}">${m group 1}</a>"""
+                                     })
     }
   }
 
-  private val urlRegex = """(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s<>]+|\(([^\s<>]+|(\([^\s<>]+\)))*\))+(?:\(([^\s<>]+|(\([^\s<>]+\)))*\)|[^\s`!\[\]{};:'".,<>?«»“”‘’]))""".r
+  private val urlRegex =
+    """(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s<>]+|\(([^\s<>]+|(\([^\s<>]+\)))*\))+(?:\(([^\s<>]+|(\([^\s<>]+\)))*\)|[^\s`!\[\]{};:'".,<>?«»“”‘’]))""".r
 
-  def addLinks(text: String) = urlRegex.replaceAllIn(text, m => {
-    val url = delocalize(quoteReplacement(m group 1))
-    val target = if (url contains netDomain) "" else " target='blank'"
-    s"""<a$target rel="nofollow" href="${prependHttp(url)}">$url</a>"""
-  })
+  def addLinks(text: String) =
+    urlRegex.replaceAllIn(text,
+                          m =>
+                            {
+                              val url = delocalize(quoteReplacement(m group 1))
+                              val target = if (url contains netDomain) "" else " target='blank'"
+                              s"""<a$target rel="nofollow" href="${prependHttp(url)}">$url</a>"""
+                          })
 
   private def prependHttp(url: String): String =
     url startsWith "http" fold (url, "http://" + url)
@@ -74,9 +80,11 @@ trait StringHelper { self: NumberHelper =>
   private val NumberLastRegex = """^(.+)\s(\d+)$""".r
   def splitNumber(s: String)(implicit ctx: UserContext): Html = Html {
     s match {
-      case NumberFirstRegex(number, text) => "<strong>%s</strong><br />%s".format((~parseIntOption(number)).localize, text)
-      case NumberLastRegex(text, number)  => "%s<br /><strong>%s</strong>".format(text, (~parseIntOption(number)).localize)
-      case h                              => h.replace("\n", "<br />")
+      case NumberFirstRegex(number, text) =>
+        "<strong>%s</strong><br />%s".format((~parseIntOption(number)).localize, text)
+      case NumberLastRegex(text, number) =>
+        "%s<br /><strong>%s</strong>".format(text, (~parseIntOption(number)).localize)
+      case h => h.replace("\n", "<br />")
     }
   }
   def splitNumber(s: Html)(implicit ctx: UserContext): Html = splitNumber(s.body)

@@ -11,10 +11,7 @@ final class NoteApi(coll: Coll) {
 
   def set(gameId: String, userId: String, text: String) = {
     if (text.isEmpty) coll.remove(BSONDocument("_id" -> makeId(gameId, userId)))
-    else coll.update(
-      $id(makeId(gameId, userId)),
-      $set("t" -> text),
-      upsert = true)
+    else coll.update($id(makeId(gameId, userId)), $set("t" -> text), upsert = true)
   }.void
 
   private def makeId(gameId: String, userId: String) = s"$gameId$userId"

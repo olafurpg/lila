@@ -9,38 +9,39 @@ import reactivemongo.bson._
 
 import lila.db.dsl._
 import lila.db.BSON.BSONJodaDateTimeHandler
-import lila.user.{ User, UserRepo }
+import lila.user.{User, UserRepo}
 
-final class Api(
-    coll: Coll,
-    firewall: Firewall,
-    tor: Tor,
-    geoIP: GeoIP,
-    emailAddress: EmailAddress) {
+final class Api(coll: Coll,
+                firewall: Firewall,
+                tor: Tor,
+                geoIP: GeoIP,
+                emailAddress: EmailAddress) {
 
   val AccessUri = "access_uri"
 
-  def loginForm = Form(mapping(
-    "username" -> nonEmptyText,
-    "password" -> nonEmptyText
-  )(authenticateUser)(_.map(u => (u.username, "")))
-    .verifying("Invalid username or password", _.isDefined)
-  )
+  def loginForm = Form(
+    mapping(
+      "username" -> nonEmptyText,
+      "password" -> nonEmptyText
+    )(authenticateUser)(_.map(u => (u.username, "")))
+      .verifying("Invalid username or password", _.isDefined))
 
-  def saveAuthentication(userId: String, apiVersion: Option[Int])(implicit req: RequestHeader): Fu[String] =
+  def saveAuthentication(userId: String, apiVersion: Option[Int])(
+      implicit req: RequestHeader): Fu[String] =
     if (tor isExitNode req.remoteAddress) fufail(Api.AuthFromTorExitNode)
-    else UserRepo mustConfirmEmail userId flatMap {
-      case true => fufail(Api MustConfirmEmail userId)
-      case false =>
-        val sessionId = Random nextStringUppercase 12
-        Store.save(sessionId, userId, req, apiVersion) inject sessionId
-    }
+    else
+      UserRepo mustConfirmEmail userId flatMap {
+        case true => fufail(Api MustConfirmEmail userId)
+        case false =>
+          val sessionId = Random nextStringUppercase 12
+          Store.save(sessionId, userId, req, apiVersion) inject sessionId
+      }
 
   // blocking function, required by Play2 form
   private def authenticateUser(usernameOrEmail: String, password: String): Option[User] =
     (emailAddress.validate(usernameOrEmail) match {
       case Some(email) => UserRepo.authenticateByEmail(email, password)
-      case None        => UserRepo.authenticateById(User normalize usernameOrEmail, password)
+      case None => UserRepo.authenticateById(User normalize usernameOrEmail, password)
     }) awaitSeconds 2
 
   def restoreUser(req: RequestHeader): Fu[Option[FingerprintedUser]] =
@@ -80,18 +81,21 @@ final class Api(
   def userIdsSharingFingerprint = userIdsSharingField("fp") _
 
   private def userIdsSharingField(field: String)(userId: String): Fu[List[String]] =
-    coll.distinct(
-      field,
-      $doc("user" -> userId, field -> $doc("$exists" -> true)).some
-    ).flatMap {
+    coll
+      .distinct(
+        field,
+        $doc("user" -> userId, field -> $doc("$exists" -> true)).some
+      )
+      .flatMap {
         case Nil => fuccess(Nil)
-        case values => coll.distinct(
-          "user",
-          $doc(
-            field -> $doc("$in" -> values),
-            "user" -> $doc("$ne" -> userId)
-          ).some
-        ) map lila.db.BSON.asStrings
+        case values =>
+          coll.distinct(
+            "user",
+            $doc(
+              field -> $doc("$in" -> values),
+              "user" -> $doc("$ne" -> userId)
+            ).some
+          ) map lila.db.BSON.asStrings
       }
 
   def recentUserIdsByFingerprint = recentUserIdsByField("fp") _

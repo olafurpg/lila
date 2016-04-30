@@ -8,29 +8,29 @@ import chess.Speed
 import org.joda.time.DateTime
 import lila.rating.PerfType
 
-case class User(
-    id: String,
-    username: String,
-    perfs: Perfs,
-    count: Count,
-    troll: Boolean = false,
-    ipBan: Boolean = false,
-    enabled: Boolean,
-    roles: List[String],
-    profile: Option[Profile] = None,
-    engine: Boolean = false,
-    booster: Boolean = false,
-    toints: Int = 0,
-    playTime: Option[User.PlayTime] = None,
-    title: Option[String] = None,
-    createdAt: DateTime,
-    seenAt: Option[DateTime],
-    kid: Boolean,
-    lang: Option[String]) extends Ordered[User] {
+case class User(id: String,
+                username: String,
+                perfs: Perfs,
+                count: Count,
+                troll: Boolean = false,
+                ipBan: Boolean = false,
+                enabled: Boolean,
+                roles: List[String],
+                profile: Option[Profile] = None,
+                engine: Boolean = false,
+                booster: Boolean = false,
+                toints: Int = 0,
+                playTime: Option[User.PlayTime] = None,
+                title: Option[String] = None,
+                createdAt: DateTime,
+                seenAt: Option[DateTime],
+                kid: Boolean,
+                lang: Option[String])
+    extends Ordered[User] {
 
   override def equals(other: Any) = other match {
     case u: User => id == u.id
-    case _       => false
+    case _ => false
   }
 
   override def toString =
@@ -52,7 +52,8 @@ case class User(
 
   def titleUsername = title.fold(username)(_ + " " + username)
 
-  def titleUsernameWithBestRating = title.fold(usernameWithBestRating)(_ + " " + usernameWithBestRating)
+  def titleUsernameWithBestRating =
+    title.fold(usernameWithBestRating)(_ + " " + usernameWithBestRating)
 
   def profileOrDefault = profile | Profile.default
 
@@ -79,11 +80,20 @@ case class User(
   def lightCount = User.LightCount(light, count.game)
 
   private def best4Of(perfTypes: List[PerfType]) =
-    perfTypes.sortBy { pt => -perfs(pt).nb } take 4
+    perfTypes.sortBy { pt =>
+      -perfs(pt).nb
+    } take 4
 
   def best8Perfs: List[PerfType] =
-    best4Of(List(PerfType.Bullet, PerfType.Blitz, PerfType.Classical, PerfType.Correspondence)) :::
-      best4Of(List(PerfType.Crazyhouse, PerfType.Chess960, PerfType.KingOfTheHill, PerfType.ThreeCheck, PerfType.Antichess, PerfType.Atomic, PerfType.Horde, PerfType.RacingKings))
+    best4Of(List(PerfType.Bullet, PerfType.Blitz, PerfType.Classical, PerfType.Correspondence)) ::: best4Of(
+      List(PerfType.Crazyhouse,
+           PerfType.Chess960,
+           PerfType.KingOfTheHill,
+           PerfType.ThreeCheck,
+           PerfType.Antichess,
+           PerfType.Atomic,
+           PerfType.Horde,
+           PerfType.RacingKings))
 }
 
 object User {
@@ -107,18 +117,17 @@ object User {
 
   def normalize(username: String) = username.toLowerCase
 
-  val titles = Seq(
-    "GM" -> "Grandmaster",
-    "WGM" -> "Woman Grandmaster",
-    "IM" -> "International Master",
-    "WIM" -> "Woman Intl. Master",
-    "FM" -> "FIDE Master",
-    "WFM" -> "Woman FIDE Master",
-    "NM" -> "National Master",
-    "CM" -> "Candidate Master",
-    "WCM" -> "Woman Candidate Master",
-    "WNM" -> "Woman National Master",
-    "LM" -> "Lichess Master")
+  val titles = Seq("GM" -> "Grandmaster",
+                   "WGM" -> "Woman Grandmaster",
+                   "IM" -> "International Master",
+                   "WIM" -> "Woman Intl. Master",
+                   "FM" -> "FIDE Master",
+                   "WFM" -> "Woman FIDE Master",
+                   "NM" -> "National Master",
+                   "CM" -> "Candidate Master",
+                   "WCM" -> "Woman Candidate Master",
+                   "WNM" -> "Woman National Master",
+                   "LM" -> "Lichess Master")
 
   val titlesMap = titles.toMap
 
@@ -160,44 +169,44 @@ object User {
     private implicit def profileHandler = Profile.profileBSONHandler
     private implicit def perfsHandler = Perfs.perfsBSONHandler
 
-    def reads(r: BSON.Reader): User = User(
-      id = r str id,
-      username = r str username,
-      perfs = r.getO[Perfs](perfs) | Perfs.default,
-      count = r.get[Count](count),
-      troll = r boolD troll,
-      ipBan = r boolD ipBan,
-      enabled = r bool enabled,
-      roles = ~r.getO[List[String]](roles),
-      profile = r.getO[Profile](profile),
-      engine = r boolD engine,
-      booster = r boolD booster,
-      toints = r nIntD toints,
-      playTime = r.getO[PlayTime](playTime),
-      createdAt = r date createdAt,
-      seenAt = r dateO seenAt,
-      kid = r boolD kid,
-      lang = r strO lang,
-      title = r strO title)
+    def reads(r: BSON.Reader): User =
+      User(id = r str id,
+           username = r str username,
+           perfs = r.getO[Perfs](perfs) | Perfs.default,
+           count = r.get[Count](count),
+           troll = r boolD troll,
+           ipBan = r boolD ipBan,
+           enabled = r bool enabled,
+           roles = ~r.getO[List[String]](roles),
+           profile = r.getO[Profile](profile),
+           engine = r boolD engine,
+           booster = r boolD booster,
+           toints = r nIntD toints,
+           playTime = r.getO[PlayTime](playTime),
+           createdAt = r date createdAt,
+           seenAt = r dateO seenAt,
+           kid = r boolD kid,
+           lang = r strO lang,
+           title = r strO title)
 
-    def writes(w: BSON.Writer, o: User) = BSONDocument(
-      id -> o.id,
-      username -> o.username,
-      perfs -> o.perfs,
-      count -> o.count,
-      troll -> w.boolO(o.troll),
-      ipBan -> w.boolO(o.ipBan),
-      enabled -> o.enabled,
-      roles -> o.roles.some.filter(_.nonEmpty),
-      profile -> o.profile,
-      engine -> w.boolO(o.engine),
-      booster -> w.boolO(o.booster),
-      toints -> w.intO(o.toints),
-      playTime -> o.playTime,
-      createdAt -> o.createdAt,
-      seenAt -> o.seenAt,
-      kid -> w.boolO(o.kid),
-      lang -> o.lang,
-      title -> o.title)
+    def writes(w: BSON.Writer, o: User) =
+      BSONDocument(id -> o.id,
+                   username -> o.username,
+                   perfs -> o.perfs,
+                   count -> o.count,
+                   troll -> w.boolO(o.troll),
+                   ipBan -> w.boolO(o.ipBan),
+                   enabled -> o.enabled,
+                   roles -> o.roles.some.filter(_.nonEmpty),
+                   profile -> o.profile,
+                   engine -> w.boolO(o.engine),
+                   booster -> w.boolO(o.booster),
+                   toints -> w.intO(o.toints),
+                   playTime -> o.playTime,
+                   createdAt -> o.createdAt,
+                   seenAt -> o.seenAt,
+                   kid -> w.boolO(o.kid),
+                   lang -> o.lang,
+                   title -> o.title)
   }
 }

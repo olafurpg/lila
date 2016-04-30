@@ -26,8 +26,8 @@ object PimpedFuture {
     def effectFold(fail: Exception => Unit, succ: A => Unit) {
       fua onComplete {
         case scala.util.Failure(e: Exception) => fail(e)
-        case scala.util.Failure(e)            => throw e // Throwables
-        case scala.util.Success(e)            => succ(e)
+        case scala.util.Failure(e) => throw e // Throwables
+        case scala.util.Success(e) => succ(e)
       }
     }
 
@@ -46,7 +46,9 @@ object PimpedFuture {
       fua flatMap succ recoverWith { case e: Exception => fail(e) }
 
     def logFailure(logger: => lila.log.Logger, msg: Exception => String): Fu[A] =
-      addFailureEffect { e => logger.warn(msg(e), e) }
+      addFailureEffect { e =>
+        logger.warn(msg(e), e)
+      }
     def logFailure(logger: => lila.log.Logger): Fu[A] = logFailure(logger, _.toString)
 
     def addEffect(effect: A => Unit) = {
@@ -64,8 +66,8 @@ object PimpedFuture {
     def addEffects(fail: Exception => Unit, succ: A => Unit): Fu[A] =
       fua andThen {
         case scala.util.Failure(e: Exception) => fail(e)
-        case scala.util.Failure(e)            => throw e // Throwables
-        case scala.util.Success(e)            => succ(e)
+        case scala.util.Failure(e) => throw e // Throwables
+        case scala.util.Success(e) => succ(e)
       }
 
     def mapFailure(f: Exception => Exception) = fua recover {
@@ -97,9 +99,10 @@ object PimpedFuture {
       scala.concurrent.Await.result(fua, seconds.seconds)
     }
 
-    def withTimeout(duration: FiniteDuration, error: => Throwable)(implicit system: akka.actor.ActorSystem): Fu[A] = {
-      Future firstCompletedOf Seq(fua,
-        akka.pattern.after(duration, system.scheduler)(Future failed error))
+    def withTimeout(duration: FiniteDuration, error: => Throwable)(
+        implicit system: akka.actor.ActorSystem): Fu[A] = {
+      Future firstCompletedOf Seq(
+        fua, akka.pattern.after(duration, system.scheduler)(Future failed error))
     }
 
     def chronometer = lila.common.Chronometer(fua)

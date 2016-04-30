@@ -3,19 +3,19 @@ package lila.common
 import scala.concurrent.duration._
 
 import akka.actor._
-import ornicar.scalalib.Random.{ approximatly, nextString }
+import ornicar.scalalib.Random.{approximatly, nextString}
 
 final class Scheduler(scheduler: akka.actor.Scheduler, enabled: Boolean, debug: Boolean) {
 
   def throttle[A](delay: FiniteDuration)(batch: Seq[A])(op: A => Unit) {
     batch.zipWithIndex foreach {
-      case (a, i) => try {
-        scheduler.scheduleOnce((1 + i) * delay) { op(a) }
-      }
-      catch {
-        case e: java.lang.IllegalStateException =>
-        // the actor system is being stopped, can't schedule
-      }
+      case (a, i) =>
+        try {
+          scheduler.scheduleOnce((1 + i) * delay) { op(a) }
+        } catch {
+          case e: java.lang.IllegalStateException =>
+          // the actor system is being stopped, can't schedule
+        }
     }
   }
 
@@ -42,10 +42,9 @@ final class Scheduler(scheduler: akka.actor.Scheduler, enabled: Boolean, debug: 
         val tagged = "(%s) %s".format(nextString(3), name)
         doDebug ! logger.info(tagged)
         val start = nowMillis
-        op effectFold (
-          e => logger.error("(%s) %s".format(tagged, e.getMessage), e),
-          _ => doDebug ! logger.info(tagged + " - %d ms".format(nowMillis - start))
-        )
+        op effectFold
+        (e => logger.error("(%s) %s".format(tagged, e.getMessage), e),
+            _ => doDebug ! logger.info(tagged + " - %d ms".format(nowMillis - start)))
       }
     }
   }
