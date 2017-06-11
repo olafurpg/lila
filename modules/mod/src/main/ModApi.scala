@@ -2,8 +2,8 @@ package lila.mod
 
 import chess.Color
 import lila.db.dsl._
-import lila.security.{ Firewall, UserSpy, Store => SecurityStore }
-import lila.user.{ User, UserRepo, LightUserApi }
+import lila.security.{Firewall, UserSpy, Store => SecurityStore}
+import lila.user.{User, UserRepo, LightUserApi}
 
 final class ModApi(
     logApi: ModlogApi,
@@ -19,15 +19,16 @@ final class ModApi(
 
   def setEngine(mod: String, username: String, v: Boolean): Funit = withUser(username) { user =>
     (user.engine != v) ?? {
-      logApi.engine(mod, user.id, v) zip
-        UserRepo.setEngine(user.id, v) >>- {
+      logApi
+        .engine(mod, user.id, v)
+        .zip(UserRepo.setEngine(user.id, v) >>- {
           if (v) lilaBus.publish(lila.hub.actorApi.mod.MarkCheater(user.id), 'adjustCheater)
           reporter ! lila.hub.actorApi.report.MarkCheater(user.id, mod)
-        } void
+      }) void
     }
   }
 
-  def autoAdjust(username: String): Funit = logApi.wasUnengined(User.normalize(username)) flatMap {
+  def autoAdjust(username: String): Funit = logApi.wasUnengined(User.normalize(username)).flatMap {
     case true => funit
     case false =>
       lila.mon.cheat.autoMark.count()
@@ -40,57 +41,61 @@ final class ModApi(
 
   def setBooster(mod: String, username: String, v: Boolean): Funit = withUser(username) { user =>
     (user.booster != v) ?? {
-      logApi.booster(mod, user.id, v) zip
-        UserRepo.setBooster(user.id, v) >>- {
+      logApi
+        .booster(mod, user.id, v)
+        .zip(UserRepo.setBooster(user.id, v) >>- {
           if (v) lilaBus.publish(lila.hub.actorApi.mod.MarkBooster(user.id), 'adjustBooster)
-        } void
+      }) void
     }
   }
 
   def autoBooster(userId: String, accomplice: String): Funit =
-    logApi.wasUnbooster(userId) map {
+    logApi.wasUnbooster(userId).map {
       case false => reporter ! lila.hub.actorApi.report.Booster(userId, accomplice)
-      case true  =>
+      case true =>
     }
 
   def troll(mod: String, username: String, value: Boolean): Fu[Boolean] = withUser(username) { u =>
     val changed = value != u.troll
     val user = u.copy(troll = value)
-    changed ?? {
+    (changed ?? {
       UserRepo.updateTroll(user).void >>-
         logApi.troll(mod, user.id, user.troll)
     } >>-
-      (reporter ! lila.hub.actorApi.report.MarkTroll(user.id, mod)) inject user.troll
+      (reporter ! lila.hub.actorApi.report.MarkTroll(user.id, mod))).inject(user.troll)
   }
 
   def ban(mod: String, username: String): Funit = withUser(username) { user =>
-    userSpy(user.id) flatMap { spy =>
-      UserRepo.toggleIpBan(user.id) zip
-        logApi.ban(mod, user.id, !user.ipBan) zip
-        user.ipBan.fold(
-          firewall unblockIps spy.ipStrings,
-          (spy.ipStrings map firewall.blockIp).sequenceFu >>
-            (SecurityStore disconnect user.id)
-        ) void
+    userSpy(user.id).flatMap { spy =>
+      UserRepo
+        .toggleIpBan(user.id)
+        .zip(logApi.ban(mod, user.id, !user.ipBan))
+        .zip(
+          user.ipBan.fold(
+            firewall.unblockIps(spy.ipStrings),
+            spy.ipStrings.map(firewall.blockIp).sequenceFu >>
+              SecurityStore.disconnect(user.id)
+        )) void
     }
   }
 
   def closeAccount(mod: String, username: String): Fu[Option[User]] = withUser(username) { user =>
     user.enabled ?? {
-      logApi.closeAccount(mod, user.id) inject user.some
+      logApi.closeAccount(mod, user.id).inject(user.some)
     }
   }
 
   def reopenAccount(mod: String, username: String): Funit = withUser(username) { user =>
     !user.enabled ?? {
-      (UserRepo enable user.id) >> logApi.reopenAccount(mod, user.id)
+      UserRepo.enable(user.id) >> logApi.reopenAccount(mod, user.id)
     }
   }
 
-  def setTitle(mod: String, username: String, title: Option[String]): Funit = withUser(username) { user =>
-    UserRepo.setTitle(user.id, title) >>
-      lightUserApi.invalidate(user.id) >>
-      logApi.setTitle(mod, user.id, title)
+  def setTitle(mod: String, username: String, title: Option[String]): Funit = withUser(username) {
+    user =>
+      UserRepo.setTitle(user.id, title) >>
+        lightUserApi.invalidate(user.id) >>
+        logApi.setTitle(mod, user.id, title)
   }
 
   def setEmail(mod: String, username: String, email: String): Funit = withUser(username) { user =>
@@ -100,9 +105,9 @@ final class ModApi(
   }
 
   def ipban(mod: String, ip: String): Funit =
-    (firewall blockIp ip) >> logApi.ipban(mod, ip)
+    firewall.blockIp(ip) >> logApi.ipban(mod, ip)
 
   private def withUser[A](username: String)(op: User => Fu[A]): Fu[A] =
-    UserRepo named username flatten "[mod] missing user " + username flatMap op
+    UserRepo.named(username).flatten("[mod] missing user " + username).flatMap(op)
 
 }

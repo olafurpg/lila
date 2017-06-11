@@ -15,7 +15,7 @@ case class Client(
   def fullId = s"$userId:$key"
 
   def updateInstance(i: Client.Instance): Option[Client] =
-    instance.fold(i.some)(_ update i) map { newInstance =>
+    instance.fold(i.some)(_.update(i)).map { newInstance =>
       copy(instance = newInstance.some)
     }
 
@@ -53,10 +53,10 @@ object Client {
       else if (i.python != python) i.some
       else if (i.engine != engine) i.some
       else if (i.ip != ip) i.some
-      else if (i.seenAt isAfter seenAt.plusMinutes(5)) i.some
+      else if (i.seenAt.isAfter(seenAt.plusMinutes(5))) i.some
       else none
 
-    def seenRecently = seenAt isAfter Instance.recentSince
+    def seenRecently = seenAt.isAfter(Instance.recentSince)
   }
 
   object Instance {
@@ -75,5 +75,5 @@ object Client {
     def byKey(key: String) = all.find(_.key == key)
   }
 
-  def makeKey = Key(scala.util.Random.alphanumeric take 8 mkString)
+  def makeKey = Key(scala.util.Random.alphanumeric.take(8) mkString)
 }

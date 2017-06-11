@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 
 import lila.common.PimpedConfig._
 import lila.hub.actorApi.map.Ask
-import lila.hub.{ ActorMap, Sequencer }
+import lila.hub.{ActorMap, Sequencer}
 import lila.socket.actorApi.GetVersion
 import lila.socket.History
 import makeTimeout.short
@@ -25,19 +25,18 @@ final class Env(
     isOnline: String => Boolean) {
 
   private val settings = new {
-    val CollectionSimul = config getString "collection.simul"
-    val SequencerTimeout = config duration "sequencer.timeout"
-    val CreatedCacheTtl = config duration "created.cache.ttl"
-    val HistoryMessageTtl = config duration "history.message.ttl"
-    val UidTimeout = config duration "uid.timeout"
-    val SocketTimeout = config duration "socket.timeout"
-    val SocketName = config getString "socket.name"
-    val ActorName = config getString "actor.name"
+    val CollectionSimul = config.getString("collection.simul")
+    val SequencerTimeout = config.duration("sequencer.timeout")
+    val CreatedCacheTtl = config.duration("created.cache.ttl")
+    val HistoryMessageTtl = config.duration("history.message.ttl")
+    val UidTimeout = config.duration("uid.timeout")
+    val SocketTimeout = config.duration("socket.timeout")
+    val SocketName = config.getString("socket.name")
+    val ActorName = config.getString("actor.name")
   }
   import settings._
 
-  lazy val repo = new SimulRepo(
-    simulColl = simulColl)
+  lazy val repo = new SimulRepo(simulColl = simulColl)
 
   lazy val api = new SimulApi(
     repo = repo,
@@ -49,7 +48,8 @@ final class Env(
     userRegister = hub.actor.userRegister,
     lobby = hub.socket.lobby,
     onGameStart = onGameStart,
-    sequencers = sequencerMap)
+    sequencers = sequencerMap
+  )
 
   lazy val forms = new DataForm
 
@@ -57,15 +57,19 @@ final class Env(
 
   private val socketHub = system.actorOf(
     Props(new lila.socket.SocketHubActor.Default[Socket] {
-      def mkActor(simulId: String) = new Socket(
-        simulId = simulId,
-        history = new History(ttl = HistoryMessageTtl),
-        getSimul = repo.find,
-        jsonView = jsonView,
-        uidTimeout = UidTimeout,
-        socketTimeout = SocketTimeout,
-        lightUser = lightUser)
-    }), name = SocketName)
+      def mkActor(simulId: String) =
+        new Socket(
+          simulId = simulId,
+          history = new History(ttl = HistoryMessageTtl),
+          getSimul = repo.find,
+          jsonView = jsonView,
+          uidTimeout = UidTimeout,
+          socketTimeout = SocketTimeout,
+          lightUser = lightUser
+        )
+    }),
+    name = SocketName
+  )
 
   lazy val socketHandler = new SocketHandler(
     hub = hub,
@@ -74,30 +78,39 @@ final class Env(
     flood = flood,
     exists = repo.exists)
 
-  system.lilaBus.subscribe(system.actorOf(Props(new Actor {
-    import akka.pattern.pipe
-    def receive = {
-      case lila.game.actorApi.FinishGame(game, _, _) => api finishGame game
-      case lila.hub.actorApi.mod.MarkCheater(userId) => api ejectCheater userId
-      case lila.hub.actorApi.simul.GetHostIds        => api.currentHostIds pipeTo sender
-      case move: lila.hub.actorApi.round.MoveEvent =>
-        move.simulId foreach { simulId =>
-          move.opponentUserId foreach { opId =>
-            hub.actor.userRegister ! lila.hub.actorApi.SendTo(opId,
-              lila.socket.Socket.makeMessage("simulPlayerMove", move.gameId))
-          }
+  system.lilaBus.subscribe(
+    system.actorOf(
+      Props(new Actor {
+        import akka.pattern.pipe
+        def receive = {
+          case lila.game.actorApi.FinishGame(game, _, _) => api.finishGame(game)
+          case lila.hub.actorApi.mod.MarkCheater(userId) => api.ejectCheater(userId)
+          case lila.hub.actorApi.simul.GetHostIds => api.currentHostIds.pipeTo(sender)
+          case move: lila.hub.actorApi.round.MoveEvent =>
+            move.simulId.foreach { simulId =>
+              move.opponentUserId.foreach { opId =>
+                hub.actor.userRegister ! lila.hub.actorApi
+                  .SendTo(opId, lila.socket.Socket.makeMessage("simulPlayerMove", move.gameId))
+              }
+            }
         }
-    }
-  }), name = ActorName), 'finishGame, 'adjustCheater, 'moveEvent)
+      }),
+      name = ActorName
+    ),
+    'finishGame,
+    'adjustCheater,
+    'moveEvent
+  )
 
-  def isHosting(userId: String): Fu[Boolean] = api.currentHostIds map (_ contains userId)
+  def isHosting(userId: String): Fu[Boolean] = api.currentHostIds.map(_.contains(userId))
 
   val allCreated = lila.memo.AsyncCache.single(repo.allCreated, timeToLive = CreatedCacheTtl)
 
-  val allCreatedFeaturable = lila.memo.AsyncCache.single(repo.allCreatedFeaturable, timeToLive = CreatedCacheTtl)
+  val allCreatedFeaturable =
+    lila.memo.AsyncCache.single(repo.allCreatedFeaturable, timeToLive = CreatedCacheTtl)
 
   def version(tourId: String): Fu[Int] =
-    socketHub ? Ask(tourId, GetVersion) mapTo manifest[Int]
+    (socketHub ? Ask(tourId, GetVersion)).mapTo(manifest[Int])
 
   lazy val cached = new Cached(repo)
 
@@ -116,15 +129,17 @@ object Env {
 
   private def hub = lila.hub.Env.current
 
-  lazy val current = "simul" boot new Env(
-    config = lila.common.PlayApp loadConfig "simul",
-    system = lila.common.PlayApp.system,
-    scheduler = lila.common.PlayApp.scheduler,
-    db = lila.db.Env.current,
-    mongoCache = lila.memo.Env.current.mongoCache,
-    flood = lila.security.Env.current.flood,
-    hub = lila.hub.Env.current,
-    lightUser = lila.user.Env.current.lightUser,
-    onGameStart = lila.game.Env.current.onStart,
-    isOnline = lila.user.Env.current.isOnline)
+  lazy val current = "simul".boot(
+    new Env(
+      config = lila.common.PlayApp.loadConfig("simul"),
+      system = lila.common.PlayApp.system,
+      scheduler = lila.common.PlayApp.scheduler,
+      db = lila.db.Env.current,
+      mongoCache = lila.memo.Env.current.mongoCache,
+      flood = lila.security.Env.current.flood,
+      hub = lila.hub.Env.current,
+      lightUser = lila.user.Env.current.lightUser,
+      onGameStart = lila.game.Env.current.onStart,
+      isOnline = lila.user.Env.current.isOnline
+    ))
 }

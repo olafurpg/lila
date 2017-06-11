@@ -3,7 +3,7 @@ package lila.timeline
 import org.joda.time.DateTime
 import play.api.libs.json._
 import reactivemongo.bson._
-import scala.util.{ Try, Success, Failure }
+import scala.util.{Try, Success, Failure}
 
 import lila.db.dsl._
 import lila.hub.actorApi.timeline._
@@ -22,19 +22,19 @@ case class Entry(
   def similarTo(other: Entry) = typ == other.typ && data == other.data
 
   lazy val decode: Option[Atom] = Try(typ match {
-    case "follow"       => followHandler.read(data)
-    case "team-join"    => teamJoinHandler.read(data)
-    case "team-create"  => teamCreateHandler.read(data)
-    case "forum-post"   => forumPostHandler.read(data)
-    case "note-create"  => noteCreateHandler.read(data)
-    case "tour-join"    => tourJoinHandler.read(data)
-    case "qa-question"  => qaQuestionHandler.read(data)
-    case "qa-answer"    => qaAnswerHandler.read(data)
-    case "qa-comment"   => qaCommentHandler.read(data)
-    case "game-end"     => gameEndHandler.read(data)
+    case "follow" => followHandler.read(data)
+    case "team-join" => teamJoinHandler.read(data)
+    case "team-create" => teamCreateHandler.read(data)
+    case "forum-post" => forumPostHandler.read(data)
+    case "note-create" => noteCreateHandler.read(data)
+    case "tour-join" => tourJoinHandler.read(data)
+    case "qa-question" => qaQuestionHandler.read(data)
+    case "qa-answer" => qaAnswerHandler.read(data)
+    case "qa-comment" => qaCommentHandler.read(data)
+    case "game-end" => gameEndHandler.read(data)
     case "simul-create" => simulCreateHandler.read(data)
-    case "simul-join"   => simulJoinHandler.read(data)
-    case _              => sys error s"Unhandled atom type: $typ"
+    case "simul-join" => simulJoinHandler.read(data)
+    case _ => sys.error(s"Unhandled atom type: $typ")
   }) match {
     case Success(atom) => Some(atom)
     case Failure(err) =>
@@ -47,24 +47,24 @@ case class Entry(
 
 object Entry {
 
-  private def toBson[A](data: A)(implicit writer: BSONDocumentWriter[A]) = writer write data
-  private def fromBson[A](bson: Bdoc)(implicit reader: BSONDocumentReader[A]) = reader read bson
+  private def toBson[A](data: A)(implicit writer: BSONDocumentWriter[A]) = writer.write(data)
+  private def fromBson[A](bson: Bdoc)(implicit reader: BSONDocumentReader[A]) = reader.read(bson)
 
   private[timeline] def make(users: List[String], data: Atom): Entry = {
     import atomBsonHandlers._
     data match {
-      case d: Follow      => "follow" -> toBson(d)
-      case d: TeamJoin    => "team-join" -> toBson(d)
-      case d: TeamCreate  => "team-create" -> toBson(d)
-      case d: ForumPost   => "forum-post" -> toBson(d)
-      case d: NoteCreate  => "note-create" -> toBson(d)
-      case d: TourJoin    => "tour-join" -> toBson(d)
-      case d: QaQuestion  => "qa-question" -> toBson(d)
-      case d: QaAnswer    => "qa-answer" -> toBson(d)
-      case d: QaComment   => "qa-comment" -> toBson(d)
-      case d: GameEnd     => "game-end" -> toBson(d)
+      case d: Follow => "follow" -> toBson(d)
+      case d: TeamJoin => "team-join" -> toBson(d)
+      case d: TeamCreate => "team-create" -> toBson(d)
+      case d: ForumPost => "forum-post" -> toBson(d)
+      case d: NoteCreate => "note-create" -> toBson(d)
+      case d: TourJoin => "tour-join" -> toBson(d)
+      case d: QaQuestion => "qa-question" -> toBson(d)
+      case d: QaAnswer => "qa-answer" -> toBson(d)
+      case d: QaComment => "qa-comment" -> toBson(d)
+      case d: GameEnd => "game-end" -> toBson(d)
       case d: SimulCreate => "simul-create" -> toBson(d)
-      case d: SimulJoin   => "simul-join" -> toBson(d)
+      case d: SimulJoin => "simul-join" -> toBson(d)
     }
   } match {
     case (typ, bson) =>
@@ -100,18 +100,18 @@ object Entry {
     implicit val simulCreateWrite = Json.writes[SimulCreate]
     implicit val simulJoinWrite = Json.writes[SimulJoin]
     implicit val atomWrite = Writes[Atom] {
-      case d: Follow      => followWrite writes d
-      case d: TeamJoin    => teamJoinWrite writes d
-      case d: TeamCreate  => teamCreateWrite writes d
-      case d: ForumPost   => forumPostWrite writes d
-      case d: NoteCreate  => noteCreateWrite writes d
-      case d: TourJoin    => tourJoinWrite writes d
-      case d: QaQuestion  => qaQuestionWrite writes d
-      case d: QaAnswer    => qaAnswerWrite writes d
-      case d: QaComment   => qaCommentWrite writes d
-      case d: GameEnd     => gameEndWrite writes d
-      case d: SimulCreate => simulCreateWrite writes d
-      case d: SimulJoin   => simulJoinWrite writes d
+      case d: Follow => followWrite.writes(d)
+      case d: TeamJoin => teamJoinWrite.writes(d)
+      case d: TeamCreate => teamCreateWrite.writes(d)
+      case d: ForumPost => forumPostWrite.writes(d)
+      case d: NoteCreate => noteCreateWrite.writes(d)
+      case d: TourJoin => tourJoinWrite.writes(d)
+      case d: QaQuestion => qaQuestionWrite.writes(d)
+      case d: QaAnswer => qaAnswerWrite.writes(d)
+      case d: QaComment => qaCommentWrite.writes(d)
+      case d: GameEnd => gameEndWrite.writes(d)
+      case d: SimulCreate => simulCreateWrite.writes(d)
+      case d: SimulJoin => simulJoinWrite.writes(d)
     }
   }
 
@@ -119,9 +119,6 @@ object Entry {
 
   implicit val entryWrites = OWrites[Entry] { e =>
     import atomJsonWrite._
-    Json.obj(
-      "type" -> e.typ,
-      "data" -> e.decode,
-      "date" -> e.date)
+    Json.obj("type" -> e.typ, "data" -> e.decode, "date" -> e.date)
   }
 }

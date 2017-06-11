@@ -17,9 +17,11 @@ trait AssetHelper { self: I18nHelper =>
   def cdnUrl(path: String) = s"$assetBaseUrl$path"
   def staticUrl(path: String) = s"$assetBaseUrl${routes.Assets.at(path)}"
 
-  def cssTag(name: String, staticDomain: Boolean = true) = cssAt("stylesheets/" + name, staticDomain)
+  def cssTag(name: String, staticDomain: Boolean = true) =
+    cssAt("stylesheets/" + name, staticDomain)
 
-  def cssVendorTag(name: String, staticDomain: Boolean = true) = cssAt("vendor/" + name, staticDomain)
+  def cssVendorTag(name: String, staticDomain: Boolean = true) =
+    cssAt("vendor/" + name, staticDomain)
 
   def cssAt(path: String, staticDomain: Boolean = true) = Html {
     val href = if (staticDomain) staticUrl(path) else routes.Assets.at(path)
@@ -59,14 +61,15 @@ trait AssetHelper { self: I18nHelper =>
     test = "window.Peer",
     local = staticUrl("javascripts/vendor/peer.min.js"))
 
-  def momentLangTag(implicit ctx: lila.api.Context) = (lang(ctx).language match {
-    case "en" => none
-    case "pt" => "pt-br".some
-    case "zh" => "zh-cn".some
-    case l    => l.some
-  }).fold(Html("")) { l =>
-    jsAt(s"vendor/moment/locale/$l.js", static = true)
-  }
+  def momentLangTag(implicit ctx: lila.api.Context) =
+    (lang(ctx).language match {
+      case "en" => none
+      case "pt" => "pt-br".some
+      case "zh" => "zh-cn".some
+      case l => l.some
+    }).fold(Html("")) { l =>
+      jsAt(s"vendor/moment/locale/$l.js", static = true)
+    }
 
   val tagmanagerTag = cdnOrLocal(
     cdn = "http://cdnjs.cloudflare.com/ajax/libs/tagmanager/3.0.0/tagmanager.js",
@@ -76,7 +79,8 @@ trait AssetHelper { self: I18nHelper =>
   val typeaheadTag = cdnOrLocal(
     cdn = "http://cdnjs.cloudflare.com/ajax/libs/typeahead.js/0.11.1/typeahead.bundle.min.js",
     test = "$.typeahead",
-    local = staticUrl("javascripts/vendor/typeahead.bundle.min.js"))
+    local = staticUrl("javascripts/vendor/typeahead.bundle.min.js")
+  )
 
   val fingerprintTag = Html {
     """<script src="http://cdn.jsdelivr.net/fingerprintjs2/0.7/fingerprint2.min.js"></script>"""

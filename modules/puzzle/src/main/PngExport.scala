@@ -1,7 +1,7 @@
 package lila.puzzle
 
 import chess.format.Forsyth
-import java.io.{ File, OutputStream }
+import java.io.{File, OutputStream}
 import scala.sys.process._
 
 object PngExport {

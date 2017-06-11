@@ -6,9 +6,8 @@ import play.api.data.validation.Constraints._
 
 import lila.db.dsl._
 
-private[team] final class DataForm(
-  teamColl: Coll,
-  val captcher: akka.actor.ActorSelection) extends lila.hub.CaptchedForm {
+private[team] final class DataForm(teamColl: Coll, val captcher: akka.actor.ActorSelection)
+    extends lila.hub.CaptchedForm {
 
   import lila.common.Form._
 
@@ -21,48 +20,50 @@ private[team] final class DataForm(
     val move = "move" -> text
   }
 
-  val create = Form(mapping(
-    Fields.name,
-    Fields.location,
-    Fields.description,
-    Fields.open,
-    Fields.gameId,
-    Fields.move)(TeamSetup.apply)(TeamSetup.unapply)
-    .verifying("This team already exists", d => !teamExists(d).awaitSeconds(2))
-    .verifying(captchaFailMessage, validateCaptcha _))
+  val create = Form(
+    mapping(
+      Fields.name,
+      Fields.location,
+      Fields.description,
+      Fields.open,
+      Fields.gameId,
+      Fields.move)(TeamSetup.apply)(TeamSetup.unapply)
+      .verifying("This team already exists", d => !teamExists(d).awaitSeconds(2))
+      .verifying(captchaFailMessage, validateCaptcha _))
 
-  def edit(team: Team) = Form(mapping(
-    Fields.location,
-    Fields.description,
-    Fields.open)(TeamEdit.apply)(TeamEdit.unapply)) fill TeamEdit(
-    location = team.location,
-    description = team.description,
-    open = team.open.fold(1, 0))
+  def edit(team: Team) =
+    Form(
+      mapping(Fields.location, Fields.description, Fields.open)(TeamEdit.apply)(TeamEdit.unapply))
+      .fill(
+        TeamEdit(
+          location = team.location,
+          description = team.description,
+          open = team.open.fold(1, 0)))
 
-  val request = Form(mapping(
-    "message" -> text(minLength = 30, maxLength = 2000),
-    Fields.gameId,
-    Fields.move
-  )(RequestSetup.apply)(RequestSetup.unapply)
-    .verifying(captchaFailMessage, validateCaptcha _)
-  ) fill RequestSetup(
-    message = "Hello, I would like to join the team!",
-    gameId = "",
-    move = "")
+  val request = Form(
+    mapping(
+      "message" -> text(minLength = 30, maxLength = 2000),
+      Fields.gameId,
+      Fields.move
+    )(RequestSetup.apply)(RequestSetup.unapply)
+      .verifying(captchaFailMessage, validateCaptcha _))
+    .fill(RequestSetup(message = "Hello, I would like to join the team!", gameId = "", move = ""))
 
-  val processRequest = Form(tuple(
-    "process" -> nonEmptyText,
-    "url" -> nonEmptyText
-  ))
+  val processRequest = Form(
+    tuple(
+      "process" -> nonEmptyText,
+      "url" -> nonEmptyText
+    ))
 
-  val kick = Form(single(
-    "userId" -> nonEmptyText
-  ))
+  val kick = Form(
+    single(
+      "userId" -> nonEmptyText
+    ))
 
   def createWithCaptcha = withCaptcha(create)
 
   private def teamExists(setup: TeamSetup) =
-    teamColl.exists($id(Team nameToId setup.trim.name))
+    teamColl.exists($id(Team.nameToId(setup.trim.name)))
 }
 
 private[team] case class TeamSetup(
@@ -75,25 +76,19 @@ private[team] case class TeamSetup(
 
   def isOpen = open == 1
 
-  def trim = copy(
-    name = name.trim,
-    location = location map (_.trim) filter (_.nonEmpty),
-    description = description.trim)
+  def trim =
+    copy(
+      name = name.trim,
+      location = location.map(_.trim).filter(_.nonEmpty),
+      description = description.trim)
 }
 
-private[team] case class TeamEdit(
-    location: Option[String],
-    description: String,
-    open: Int) {
+private[team] case class TeamEdit(location: Option[String], description: String, open: Int) {
 
   def isOpen = open == 1
 
-  def trim = copy(
-    location = location map (_.trim) filter (_.nonEmpty),
-    description = description.trim)
+  def trim =
+    copy(location = location.map(_.trim).filter(_.nonEmpty), description = description.trim)
 }
 
-private[team] case class RequestSetup(
-  message: String,
-  gameId: String,
-  move: String)
+private[team] case class RequestSetup(message: String, gameId: String, move: String)

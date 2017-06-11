@@ -34,7 +34,7 @@ object Color {
     def unary_! = this
   }
 
-  def apply(name: String): Option[Color] = all find (_.name == name)
+  def apply(name: String): Option[Color] = all.find(_.name == name)
 
   def orDefault(name: String) = apply(name) | default
 
@@ -42,9 +42,9 @@ object Color {
 
   def random = all(scala.util.Random.nextInt(all.size))
 
-  val names = all map (_.name)
+  val names = all.map(_.name)
 
-  val choices = names zip names
+  val choices = names.zip(names)
 
   val default = Random
 }

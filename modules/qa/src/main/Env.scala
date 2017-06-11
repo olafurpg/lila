@@ -11,9 +11,9 @@ final class Env(
     mongoCache: lila.memo.MongoCache.Builder,
     db: lila.db.Env) {
 
-  private val CollectionQuestion = config getString "collection.question"
-  private val CollectionAnswer = config getString "collection.answer"
-  private val NotifierSender = config getString "notifier.sender"
+  private val CollectionQuestion = config.getString("collection.question")
+  private val CollectionAnswer = config.getString("collection.answer")
+  private val NotifierSender = config.getString("notifier.sender")
 
   private lazy val questionColl = db(CollectionQuestion)
 
@@ -35,10 +35,12 @@ final class Env(
 
 object Env {
 
-  lazy val current = "qa" boot new Env(
-    config = lila.common.PlayApp loadConfig "qa",
-    hub = lila.hub.Env.current,
-    detectLanguage = DetectLanguage(lila.common.PlayApp loadConfig "detectlanguage"),
-    mongoCache = lila.memo.Env.current.mongoCache,
-    db = lila.db.Env.current)
+  lazy val current = "qa".boot(
+    new Env(
+      config = lila.common.PlayApp.loadConfig("qa"),
+      hub = lila.hub.Env.current,
+      detectLanguage = DetectLanguage(lila.common.PlayApp.loadConfig("detectlanguage")),
+      mongoCache = lila.memo.Env.current.mongoCache,
+      db = lila.db.Env.current
+    ))
 }

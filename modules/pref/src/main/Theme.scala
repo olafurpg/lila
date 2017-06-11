@@ -17,25 +17,41 @@ sealed trait ThemeObject {
 
   lazy val list = all.list
 
-  lazy val listString = list mkString " "
+  lazy val listString = list.mkString(" ")
 
-  lazy val allByName = list map { c => c.name -> c } toMap
+  lazy val allByName = list.map { c =>
+    c.name -> c
+  } toMap
 
-  def apply(name: String) = (allByName get name) | default
+  def apply(name: String) = allByName.get(name) | default
 
-  def contains(name: String) = allByName contains name
+  def contains(name: String) = allByName.contains(name)
 }
 
 object Theme extends ThemeObject {
 
   val all = NonEmptyList(
-    "blue", "blue2", "blue3", "canvas",
-    "wood", "wood2", "wood3", "maple",
-    "green", "marble", "brown", "leather",
-    "grey", "metal", "olive", "purple"
-  ) map { name => new Theme(name) }
+    "blue",
+    "blue2",
+    "blue3",
+    "canvas",
+    "wood",
+    "wood2",
+    "wood3",
+    "maple",
+    "green",
+    "marble",
+    "brown",
+    "leather",
+    "grey",
+    "metal",
+    "olive",
+    "purple"
+  ).map { name =>
+    new Theme(name)
+  }
 
-  lazy val default = allByName get "brown" err "Can't find default theme D:"
+  lazy val default = allByName.get("brown").err("Can't find default theme D:")
 }
 
 object Theme3d extends ThemeObject {
@@ -56,7 +72,9 @@ object Theme3d extends ThemeObject {
     "Wax",
     "Jade",
     "Woodi"
-  ) map { name => new Theme(name) }
+  ).map { name =>
+    new Theme(name)
+  }
 
-  lazy val default = allByName get "Woodi" err "Can't find default theme D:"
+  lazy val default = allByName.get("Woodi").err("Can't find default theme D:")
 }

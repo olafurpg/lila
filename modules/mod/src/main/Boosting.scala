@@ -33,9 +33,13 @@ final class BoostingApi(
   def determineBoosting(record: BoostingRecord, winner: User, loser: User): Funit =
     (record.games >= nbGamesToMark) ?? {
       {
-        (record.games >= (winner.count.rated * ratioGamesToMark)) ?? modApi.autoBooster(winner.id, loser.id)
+        (record.games >= (winner.count.rated * ratioGamesToMark)) ?? modApi.autoBooster(
+          winner.id,
+          loser.id)
       } >> {
-        (record.games >= (loser.count.rated * ratioGamesToMark)) ?? modApi.autoBooster(loser.id, winner.id)
+        (record.games >= (loser.count.rated * ratioGamesToMark)) ?? modApi.autoBooster(
+          loser.id,
+          winner.id)
       }
     }
 
@@ -59,19 +63,17 @@ final class BoostingApi(
           val id = boostingId(result.winner, result.loser)
           getBoostingRecord(id).flatMap {
             case Some(record) =>
-              val newRecord = BoostingRecord(
-                _id = id,
-                games = record.games + 1)
-              createBoostRecord(newRecord) >> determineBoosting(newRecord, result.winner, result.loser)
-            case none => createBoostRecord(BoostingRecord(
-              _id = id,
-              games = 1))
+              val newRecord = BoostingRecord(_id = id, games = record.games + 1)
+              createBoostRecord(newRecord) >> determineBoosting(
+                newRecord,
+                result.winner,
+                result.loser)
+            case none => createBoostRecord(BoostingRecord(_id = id, games = 1))
           }
         }
         case none => funit
       }
-    }
-    else {
+    } else {
       funit
     }
   }
@@ -84,7 +86,5 @@ object BoostingApi {
     def id = _id
   }
 
-  case class GameResult(
-    winner: User,
-    loser: User)
+  case class GameResult(winner: User, loser: User)
 }

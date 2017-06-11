@@ -11,10 +11,7 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 
 import makeTimeout.veryLarge
 
-private[i18n] final class GitWrite(
-    transRelPath: String,
-    repoPath: String,
-    system: ActorSystem) {
+private[i18n] final class GitWrite(transRelPath: String, repoPath: String, system: ActorSystem) {
 
   private val repo = (new FileRepositoryBuilder())
     .setGitDir(new File(repoPath + "/.git"))
@@ -26,10 +23,10 @@ private[i18n] final class GitWrite(
 
   def apply(translations: List[Translation]): Funit = {
     logger.info("Working on " + repoPath)
-    git.currentBranch flatMap { currentBranch =>
+    git.currentBranch.flatMap { currentBranch =>
       logger.info("Current branch is " + currentBranch)
-      (translations map gitActor.?).sequenceFu >>
-        (gitActor ? currentBranch mapTo manifest[Unit])
+      translations.map(gitActor.?).sequenceFu >>
+        ((gitActor ? currentBranch).mapTo(manifest[Unit]))
     }
   }
 
@@ -39,26 +36,29 @@ private[i18n] final class GitWrite(
 
       case branch: String => {
         logger.info("Checkout " + branch)
-        git checkout branch
+        git.checkout(branch)
         sender ! (())
       }
 
       case translation: Translation => {
         val branch = "t/" + translation.id
         val code = translation.code
-        val name = (LangList name code) err "Lang does not exist: " + code
+        val name = (LangList.name(code)).err("Lang does not exist: " + code)
         val commitMsg = commitMessage(translation, name)
-        sender ! (git branchExists branch flatMap {
-          _.fold(
-            fuccess(logger.warn("! Branch already exists: " + branch)),
-            git.checkout(branch, true) >>
-              writeMessages(translation) >>-
-              logger.info("Add " + relFileOf(translation)) >>
-              (git add relFileOf(translation)) >>-
-              logger.info("- " + commitMsg) >>
-              (git commit commitMsg).void
-          )
-        }).await
+        sender ! git
+          .branchExists(branch)
+          .flatMap {
+            _.fold(
+              fuccess(logger.warn("! Branch already exists: " + branch)),
+              git.checkout(branch, true) >>
+                writeMessages(translation) >>-
+                logger.info("Add " + relFileOf(translation)) >>
+                (git.add(relFileOf(translation))) >>-
+                logger.info("- " + commitMsg) >>
+                git.commit(commitMsg).void
+            )
+          }
+          .await
       }
 
     }
@@ -67,7 +67,7 @@ private[i18n] final class GitWrite(
   private def writeMessages(translation: Translation) = {
     logger.info("Write messages to " + absFileOf(translation))
     printToFile(absFileOf(translation)) { writer =>
-      translation.lines foreach writer.println
+      translation.lines.foreach(writer.println)
     }
   }
 
@@ -96,11 +96,11 @@ private[i18n] final class GitWrite(
     }
 
     def branchList = Future {
-      api.branchList.call map (_.getName) map cleanupBranch
+      api.branchList.call.map(_.getName).map(cleanupBranch)
     }
 
     def branchExists(branch: String) =
-      branchList map (_ contains branch)
+      branchList.map(_.contains(branch))
 
     def checkout(branch: String, create: Boolean = false) = Future {
       api.checkout.setName(branch).setCreateBranch(create).call

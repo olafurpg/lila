@@ -10,17 +10,17 @@ case class Profile(
     lastName: Option[String] = None) {
 
   def nonEmptyRealName = List(ne(firstName), ne(lastName)).flatten match {
-    case Nil   => none
-    case names => (names mkString " ").some
+    case Nil => none
+    case names => names.mkString(" ").some
   }
 
-  def countryInfo = country flatMap Countries.info
+  def countryInfo = country.flatMap(Countries.info)
 
   def nonEmptyLocation = ne(location)
 
   def nonEmptyBio = ne(bio)
 
-  private def ne(str: Option[String]) = str filter (_.nonEmpty)
+  private def ne(str: Option[String]) = str.filter(_.nonEmpty)
 }
 
 object Profile {

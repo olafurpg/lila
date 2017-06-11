@@ -1,7 +1,7 @@
 package lila.perfStat
 
 import lila.common.LightUser
-import lila.rating.{ PerfType, Perf, Glicko }
+import lila.rating.{PerfType, Perf, Glicko}
 import lila.user.User
 
 import org.joda.time.DateTime
@@ -12,20 +12,18 @@ final class JsonView(getLightUser: String => Option[LightUser]) {
 
   import JsonView._
 
-  def apply(
-    user: User,
-    stat: PerfStat,
-    rank: Option[Int],
-    ratingDistribution: Option[List[Int]]) = Json.obj(
-    "user" -> user,
-    "perf" -> user.perfs(stat.perfType),
-    "rank" -> rank,
-    "percentile" -> ratingDistribution.map { distrib =>
-      lila.user.Stat.percentile(distrib, user.perfs(stat.perfType).intRating) match {
-        case (under, sum) => Math.round(under * 1000.0 / sum) / 10.0
-      }
-    },
-    "stat" -> stat.copy(playStreak = stat.playStreak.checkCurrent))
+  def apply(user: User, stat: PerfStat, rank: Option[Int], ratingDistribution: Option[List[Int]]) =
+    Json.obj(
+      "user" -> user,
+      "perf" -> user.perfs(stat.perfType),
+      "rank" -> rank,
+      "percentile" -> ratingDistribution.map { distrib =>
+        lila.user.Stat.percentile(distrib, user.perfs(stat.perfType).intRating) match {
+          case (under, sum) => Math.round(under * 1000.0 / sum) / 10.0
+        }
+      },
+      "stat" -> stat.copy(playStreak = stat.playStreak.checkCurrent)
+    )
 
   private implicit val userIdWriter: OWrites[UserId] = OWrites { u =>
     val light = getLightUser(u.value)
@@ -52,7 +50,7 @@ object JsonView {
 
   private val isoFormatter = ISODateTimeFormat.dateTime
   private implicit val dateWriter: Writes[DateTime] = Writes { d =>
-    JsString(isoFormatter print d)
+    JsString(isoFormatter.print(d))
   }
   private implicit val userWriter: OWrites[User] = OWrites { u =>
     Json.obj("name" -> u.username)
@@ -71,8 +69,6 @@ object JsonView {
     JsNumber(truncate(a.avg))
   }
   implicit val perfTypeWriter: OWrites[PerfType] = OWrites { pt =>
-    Json.obj(
-      "key" -> pt.key,
-      "name" -> pt.name)
+    Json.obj("key" -> pt.key, "name" -> pt.name)
   }
 }

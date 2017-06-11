@@ -21,21 +21,34 @@ object ApplicationBuild extends Build {
       scalacOptions := compilerOptions,
       incOptions := incOptions.value.withNameHashing(true),
       updateOptions := updateOptions.value.withCachedResolution(true),
-      sources in doc in Compile := List(),
+      sources.in(doc).in(Compile) := List(),
       // disable publishing the main API jar
-      publishArtifact in (Compile, packageDoc) := false,
+      publishArtifact.in(Compile, packageDoc) := false,
       // disable publishing the main sources jar
-      publishArtifact in (Compile, packageSrc) := false,
+      publishArtifact.in(Compile, packageSrc) := false,
       // don't stage the conf dir
       externalizeResources := false,
       // shorter prod classpath
       scriptClasspath := Seq("*"),
       // offline := true,
       libraryDependencies ++= Seq(
-        scalaz, scalalib, hasher, config, apache,
-        jgit, findbugs, RM, akka.actor, akka.slf4j,
-        spray.caching, maxmind, prismic,
-        kamon.core, kamon.statsd, java8compat, semver),
+        scalaz,
+        scalalib,
+        hasher,
+        config,
+        apache,
+        jgit,
+        findbugs,
+        RM,
+        akka.actor,
+        akka.slf4j,
+        spray.caching,
+        maxmind,
+        prismic,
+        kamon.core,
+        kamon.statsd,
+        java8compat,
+        semver),
       TwirlKeys.templateImports ++= Seq(
         "lila.game.{ Game, Player, Pov }",
         "lila.tournament.Tournament",
@@ -43,49 +56,102 @@ object ApplicationBuild extends Build {
         "lila.security.Permission",
         "lila.app.templating.Environment._",
         "lila.api.Context",
-        "lila.common.paginator.Paginator"),
-      watchSources <<= sourceDirectory in Compile map { sources =>
+        "lila.common.paginator.Paginator"
+      ),
+      watchSources <<= sourceDirectory.in(Compile).map { sources =>
         (sources ** "*").get
       },
       // trump sbt-web into not looking at public/
-      resourceDirectory in Assets := (sourceDirectory in Compile).value / "assets"
+      resourceDirectory.in(Assets) := sourceDirectory.in(Compile).value / "assets"
     ))
 
   lazy val modules = Seq(
-    chess, common, db, rating, user, security, wiki, hub, socket,
-    message, notification, i18n, game, bookmark, search,
-    gameSearch, timeline, forum, forumSearch, team, teamSearch,
-    analyse, mod, site, round, lobby, setup,
-    importer, tournament, simul, relation, report, pref, // simulation,
-    evaluation, chat, puzzle, tv, coordinate, blog, donation, qa,
-    history, worldMap, opening, video, shutup, push,
-    playban, insight, perfStat, slack, quote, challenge,
-    fishnet, explorer)
+    chess,
+    common,
+    db,
+    rating,
+    user,
+    security,
+    wiki,
+    hub,
+    socket,
+    message,
+    notification,
+    i18n,
+    game,
+    bookmark,
+    search,
+    gameSearch,
+    timeline,
+    forum,
+    forumSearch,
+    team,
+    teamSearch,
+    analyse,
+    mod,
+    site,
+    round,
+    lobby,
+    setup,
+    importer,
+    tournament,
+    simul,
+    relation,
+    report,
+    pref, // simulation,
+    evaluation,
+    chat,
+    puzzle,
+    tv,
+    coordinate,
+    blog,
+    donation,
+    qa,
+    history,
+    worldMap,
+    opening,
+    video,
+    shutup,
+    push,
+    playban,
+    insight,
+    perfStat,
+    slack,
+    quote,
+    challenge,
+    fishnet,
+    explorer
+  )
 
-  lazy val moduleRefs = modules map projectToRef
-  lazy val moduleCPDeps = moduleRefs map { new sbt.ClasspathDependency(_, None) }
+  lazy val moduleRefs = modules.map(projectToRef)
+  lazy val moduleCPDeps = moduleRefs.map { new sbt.ClasspathDependency(_, None) }
 
   lazy val api = project("api", moduleCPDeps)
     .settings(
       libraryDependencies ++= provided(
-        play.api, hasher, config, apache, jgit, findbugs, RM,
-        kamon.core, kamon.statsd)
-    ) aggregate (moduleRefs: _*)
+        play.api,
+        hasher,
+        config,
+        apache,
+        jgit,
+        findbugs,
+        RM,
+        kamon.core,
+        kamon.statsd)
+    )
+    .aggregate(moduleRefs: _*)
 
-  lazy val puzzle = project("puzzle", Seq(
-    common, memo, hub, db, user, rating)).settings(
+  lazy val puzzle = project("puzzle", Seq(common, memo, hub, db, user, rating)).settings(
     libraryDependencies ++= provided(play.api, RM)
   )
 
   lazy val quote = project("quote", Seq())
 
-  lazy val opening = project("opening", Seq(
-    common, memo, hub, db, user)).settings(
+  lazy val opening = project("opening", Seq(common, memo, hub, db, user)).settings(
     libraryDependencies ++= provided(play.api, RM)
   )
 
-  lazy val video = project("video", Seq(
-    common, memo, hub, db, user)).settings(
+  lazy val video = project("video", Seq(common, memo, hub, db, user)).settings(
     libraryDependencies ++= provided(play.api, RM)
   )
 
@@ -105,13 +171,11 @@ object ApplicationBuild extends Build {
     libraryDependencies ++= provided(play.api, RM, prismic)
   )
 
-  lazy val donation = project("donation", Seq(
-    common, db, user)).settings(
+  lazy val donation = project("donation", Seq(common, db, user)).settings(
     libraryDependencies ++= provided(play.api, RM)
   )
 
-  lazy val evaluation = project("evaluation", Seq(
-    common, hub, db, user, game, analyse)).settings(
+  lazy val evaluation = project("evaluation", Seq(common, hub, db, user, game, analyse)).settings(
     libraryDependencies ++= provided(play.api, RM)
   )
 
@@ -152,29 +216,27 @@ object ApplicationBuild extends Build {
     libraryDependencies ++= provided(play.api, RM)
   )
 
-  lazy val timeline = project("timeline", Seq(common, db, game, user, hub, security, relation)).settings(
-    libraryDependencies ++= provided(
-      play.api, play.test, RM)
-  )
+  lazy val timeline =
+    project("timeline", Seq(common, db, game, user, hub, security, relation)).settings(
+      libraryDependencies ++= provided(play.api, play.test, RM)
+    )
 
-  lazy val mod = project("mod", Seq(common, db, user, hub, security, game, analyse, evaluation, report)).settings(
-    libraryDependencies ++= provided(
-      play.api, play.test, RM)
-  )
+  lazy val mod =
+    project("mod", Seq(common, db, user, hub, security, game, analyse, evaluation, report))
+      .settings(
+        libraryDependencies ++= provided(play.api, play.test, RM)
+      )
 
   lazy val user = project("user", Seq(common, memo, db, hub, chess, rating)).settings(
-    libraryDependencies ++= provided(
-      play.api, play.test, RM, hasher)
+    libraryDependencies ++= provided(play.api, play.test, RM, hasher)
   )
 
   lazy val game = project("game", Seq(common, memo, db, hub, user, chess, chat)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM)
+    libraryDependencies ++= provided(play.api, RM)
   )
 
   lazy val gameSearch = project("gameSearch", Seq(common, hub, chess, search, game)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM)
+    libraryDependencies ++= provided(play.api, RM)
   )
 
   lazy val tv = project("tv", Seq(common, db, hub, socket, game, user, chess)).settings(
@@ -182,45 +244,74 @@ object ApplicationBuild extends Build {
   )
 
   lazy val analyse = project("analyse", Seq(common, hub, chess, game, user)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM, spray.caching)
+    libraryDependencies ++= provided(play.api, RM, spray.caching)
   )
 
-  lazy val round = project("round", Seq(
-    common, db, memo, hub, socket, chess, game, user,
-    i18n, fishnet, pref, chat, history, playban)).settings(
+  lazy val round = project(
+    "round",
+    Seq(
+      common,
+      db,
+      memo,
+      hub,
+      socket,
+      chess,
+      game,
+      user,
+      i18n,
+      fishnet,
+      pref,
+      chat,
+      history,
+      playban)).settings(
     libraryDependencies ++= provided(play.api, RM, hasher, kamon.core)
   )
 
-  lazy val lobby = project("lobby", Seq(
-    common, db, memo, hub, socket, chess, game, user, round, timeline, relation, playban, security)).settings(
+  lazy val lobby = project(
+    "lobby",
+    Seq(
+      common,
+      db,
+      memo,
+      hub,
+      socket,
+      chess,
+      game,
+      user,
+      round,
+      timeline,
+      relation,
+      playban,
+      security)).settings(
     libraryDependencies ++= provided(play.api, RM)
   )
 
-  lazy val setup = project("setup", Seq(
-    common, db, memo, hub, socket, chess, game, user, lobby, pref, relation)).settings(
-    libraryDependencies ++= provided(play.api, RM)
-  )
+  lazy val setup =
+    project("setup", Seq(common, db, memo, hub, socket, chess, game, user, lobby, pref, relation))
+      .settings(
+        libraryDependencies ++= provided(play.api, RM)
+      )
 
   lazy val importer = project("importer", Seq(common, chess, game, round)).settings(
     libraryDependencies ++= provided(play.api, RM)
   )
 
-  lazy val insight = project("insight",
-    Seq(common, chess, game, user, analyse, relation, pref, socket, round, security)
-  ).settings(
+  lazy val insight = project(
+    "insight",
+    Seq(common, chess, game, user, analyse, relation, pref, socket, round, security)).settings(
+    libraryDependencies ++= provided(play.api, RM)
+  )
+
+  lazy val tournament = project(
+    "tournament",
+    Seq(common, hub, socket, chess, game, round, security, chat, memo, quote)).settings(
+    libraryDependencies ++= provided(play.api, RM)
+  )
+
+  lazy val simul =
+    project("simul", Seq(common, hub, socket, chess, game, round, chat, memo, quote)).settings(
       libraryDependencies ++= provided(play.api, RM)
     )
-
-  lazy val tournament = project("tournament", Seq(
-    common, hub, socket, chess, game, round, security, chat, memo, quote)).settings(
-    libraryDependencies ++= provided(play.api, RM)
-  )
-
-  lazy val simul = project("simul", Seq(
-    common, hub, socket, chess, game, round, chat, memo, quote)).settings(
-    libraryDependencies ++= provided(play.api, RM)
-  )
 
   lazy val fishnet = project("fishnet", Seq(common, chess, game, analyse, db)).settings(
     libraryDependencies ++= provided(play.api, RM, semver)
@@ -259,53 +350,45 @@ object ApplicationBuild extends Build {
   )
 
   lazy val message = project("message", Seq(common, db, user, hub, relation, security)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM, spray.caching)
+    libraryDependencies ++= provided(play.api, RM, spray.caching)
   )
 
   lazy val forum = project("forum", Seq(common, db, user, security, hub, mod)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM, spray.caching)
+    libraryDependencies ++= provided(play.api, RM, spray.caching)
   )
 
   lazy val forumSearch = project("forumSearch", Seq(common, hub, forum, search)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM)
+    libraryDependencies ++= provided(play.api, RM)
   )
 
   lazy val team = project("team", Seq(common, memo, db, user, forum, security, hub)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM)
+    libraryDependencies ++= provided(play.api, RM)
   )
 
   lazy val teamSearch = project("teamSearch", Seq(common, hub, team, search)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM)
+    libraryDependencies ++= provided(play.api, RM)
   )
 
   lazy val i18n = project("i18n", Seq(common, db, user, hub)).settings(
-    sourceGenerators in Compile += Def.task {
+    sourceGenerators.in(Compile) += Def.task {
       MessageCompiler(
-        (baseDirectory in Compile).value / "messages",
-        (sourceManaged in Compile).value / "messages"
+        baseDirectory.in(Compile).value / "messages",
+        sourceManaged.in(Compile).value / "messages"
       )
     }.taskValue,
     libraryDependencies ++= provided(play.api, RM, jgit)
   )
 
   lazy val bookmark = project("bookmark", Seq(common, memo, db, hub, user, game)).settings(
-    libraryDependencies ++= provided(
-      play.api, play.test, RM)
+    libraryDependencies ++= provided(play.api, play.test, RM)
   )
 
   lazy val wiki = project("wiki", Seq(common, db)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM, jgit, guava)
+    libraryDependencies ++= provided(play.api, RM, jgit, guava)
   )
 
   lazy val report = project("report", Seq(common, db, user)).settings(
-    libraryDependencies ++= provided(
-      play.api, RM)
+    libraryDependencies ++= provided(play.api, RM)
   )
 
   lazy val explorer = project("explorer", Seq(common, db, game)).settings(

@@ -7,7 +7,7 @@ object AggregationClusters {
 
   def apply[X](question: Question[X], res: AggregationResult): List[Cluster[X]] =
     postSort(question) {
-      if (Metric isStacked question.metric) stacked(question, res)
+      if (Metric.isStacked(question.metric)) stacked(question, res)
       else single(question, res)
     }
 
@@ -26,7 +26,7 @@ object AggregationClusters {
 
   private def stacked[X](question: Question[X], res: AggregationResult): List[Cluster[X]] =
     res.documents.flatMap { doc =>
-      val metricValues = Metric valuesOf question.metric
+      val metricValues = Metric.valuesOf(question.metric)
       // println(lila.db.BSON debug doc)
       for {
         x <- doc.getAs[X]("_id")(question.dimension.bson)
@@ -37,15 +37,17 @@ object AggregationClusters {
         }
         total = stack.map(_.v.toInt).sum
         percents = if (total == 0) points
-        else points.map {
-          case (n, p) => n -> Point(100 * p.y / total)
-        }
+        else
+          points.map {
+            case (n, p) => n -> Point(100 * p.y / total)
+          }
         ids <- doc.getAs[List[String]]("ids")
       } yield Cluster(x, Insight.Stacked(percents), total, ids)
     }
 
-  private def postSort[X](q: Question[X])(clusters: List[Cluster[X]]): List[Cluster[X]] = q.dimension match {
-    case Dimension.Opening => clusters
-    case _                 => clusters.sortLike(Dimension.valuesOf(q.dimension), _.x)
-  }
+  private def postSort[X](q: Question[X])(clusters: List[Cluster[X]]): List[Cluster[X]] =
+    q.dimension match {
+      case Dimension.Opening => clusters
+      case _ => clusters.sortLike(Dimension.valuesOf(q.dimension), _.x)
+    }
 }

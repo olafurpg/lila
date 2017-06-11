@@ -4,7 +4,7 @@ import reactivemongo.bson.BSONDocument
 
 import chess.Speed
 import lila.db.BSON
-import lila.rating.{ Perf, PerfType, Glicko }
+import lila.rating.{Perf, PerfType, Glicko}
 
 case class Perfs(
     standard: Perf,
@@ -23,30 +23,35 @@ case class Perfs(
     puzzle: Perf,
     opening: Perf) {
 
-  def perfs = List(
-    "standard" -> standard,
-    "chess960" -> chess960,
-    "kingOfTheHill" -> kingOfTheHill,
-    "threeCheck" -> threeCheck,
-    "antichess" -> antichess,
-    "atomic" -> atomic,
-    "horde" -> horde,
-    "racingKings" -> racingKings,
-    "crazyhouse" -> crazyhouse,
-    "bullet" -> bullet,
-    "blitz" -> blitz,
-    "classical" -> classical,
-    "correspondence" -> correspondence,
-    "puzzle" -> puzzle,
-    "opening" -> opening)
+  def perfs =
+    List(
+      "standard" -> standard,
+      "chess960" -> chess960,
+      "kingOfTheHill" -> kingOfTheHill,
+      "threeCheck" -> threeCheck,
+      "antichess" -> antichess,
+      "atomic" -> atomic,
+      "horde" -> horde,
+      "racingKings" -> racingKings,
+      "crazyhouse" -> crazyhouse,
+      "bullet" -> bullet,
+      "blitz" -> blitz,
+      "classical" -> classical,
+      "correspondence" -> correspondence,
+      "puzzle" -> puzzle,
+      "opening" -> opening
+    )
 
   def bestPerf: Option[(PerfType, Perf)] = {
-    val ps = PerfType.nonPuzzle map { pt => pt -> apply(pt) }
+    val ps = PerfType.nonPuzzle.map { pt =>
+      pt -> apply(pt)
+    }
     val minNb = math.max(1, ps.foldLeft(0)(_ + _._2.nb) / 10)
     ps.foldLeft(none[(PerfType, Perf)]) {
-      case (ro, p) if p._2.nb >= minNb => ro.fold(p.some) { r =>
-        Some(if (p._2.intRating > r._2.intRating) p else r)
-      }
+      case (ro, p) if p._2.nb >= minNb =>
+        ro.fold(p.some) { r =>
+          Some(if (p._2.intRating > r._2.intRating) p else r)
+        }
       case (ro, _) => ro
     }
   }
@@ -56,23 +61,24 @@ case class Perfs(
   def bestRating: Int = bestRatingIn(PerfType.leaderboardable)
 
   def bestRatingIn(types: List[PerfType]): Int = {
-    val ps = types map apply match {
+    val ps = types.map(apply) match {
       case Nil => List(standard)
-      case x   => x
+      case x => x
     }
     val minNb = ps.foldLeft(0)(_ + _.nb) / 10
     ps.foldLeft(none[Int]) {
-      case (ro, p) if p.nb >= minNb => ro.fold(p.intRating.some) { r =>
-        Some(if (p.intRating > r) p.intRating else r)
-      }
+      case (ro, p) if p.nb >= minNb =>
+        ro.fold(p.intRating.some) { r =>
+          Some(if (p.intRating > r) p.intRating else r)
+        }
       case (ro, _) => ro
     } | Perf.default.intRating
   }
 
   def bestProgress: Int = bestProgressIn(PerfType.leaderboardable)
 
-  def bestProgressIn(types: List[PerfType]): Int = types map apply match {
-    case Nil   => 0
+  def bestProgressIn(types: List[PerfType]): Int = types.map(apply) match {
+    case Nil => 0
     case perfs => perfs.map(_.progress).max
   }
 
@@ -90,35 +96,39 @@ case class Perfs(
     "classical" -> classical,
     "correspondence" -> correspondence,
     "puzzle" -> puzzle,
-    "opening" -> opening)
+    "opening" -> opening
+  )
 
-  def ratingMap: Map[String, Int] = perfsMap mapValues (_.intRating)
+  def ratingMap: Map[String, Int] = perfsMap.mapValues(_.intRating)
 
-  def ratingOf(pt: String): Option[Int] = perfsMap get pt map (_.intRating)
+  def ratingOf(pt: String): Option[Int] = perfsMap.get(pt).map(_.intRating)
 
-  def apply(key: String): Option[Perf] = perfsMap get key
+  def apply(key: String): Option[Perf] = perfsMap.get(key)
 
   def apply(perfType: PerfType): Perf = perfType match {
-    case PerfType.Standard       => standard
-    case PerfType.Bullet         => bullet
-    case PerfType.Blitz          => blitz
-    case PerfType.Classical      => classical
+    case PerfType.Standard => standard
+    case PerfType.Bullet => bullet
+    case PerfType.Blitz => blitz
+    case PerfType.Classical => classical
     case PerfType.Correspondence => correspondence
-    case PerfType.Chess960       => chess960
-    case PerfType.KingOfTheHill  => kingOfTheHill
-    case PerfType.ThreeCheck     => threeCheck
-    case PerfType.Antichess      => antichess
-    case PerfType.Atomic         => atomic
-    case PerfType.Horde          => horde
-    case PerfType.RacingKings    => racingKings
-    case PerfType.Crazyhouse     => crazyhouse
-    case PerfType.Puzzle         => puzzle
-    case PerfType.Opening        => opening
+    case PerfType.Chess960 => chess960
+    case PerfType.KingOfTheHill => kingOfTheHill
+    case PerfType.ThreeCheck => threeCheck
+    case PerfType.Antichess => antichess
+    case PerfType.Atomic => atomic
+    case PerfType.Horde => horde
+    case PerfType.RacingKings => racingKings
+    case PerfType.Crazyhouse => crazyhouse
+    case PerfType.Puzzle => puzzle
+    case PerfType.Opening => opening
   }
 
-  def inShort = perfs map {
-    case (name, perf) => s"$name:${perf.intRating}"
-  } mkString ", "
+  def inShort =
+    perfs
+      .map {
+        case (name, perf) => s"$name:${perf.intRating}"
+      }
+      .mkString(", ")
 
   def updateStandard = copy(
     standard = {
@@ -128,12 +138,9 @@ case class Perfs(
         val glicko = Glicko(
           rating = subs.map(s => s.glicko.rating * (s.nb / nb.toDouble)).sum,
           deviation = subs.map(s => s.glicko.deviation * (s.nb / nb.toDouble)).sum,
-          volatility = subs.map(s => s.glicko.volatility * (s.nb / nb.toDouble)).sum)
-        Perf(
-          glicko = glicko,
-          nb = nb,
-          recent = Nil,
-          latest = date.some)
+          volatility = subs.map(s => s.glicko.volatility * (s.nb / nb.toDouble)).sum
+        )
+        Perf(glicko = glicko, nb = nb, recent = Nil, latest = date.some)
       }
     }
   )
@@ -147,23 +154,31 @@ case object Perfs {
   }
 
   def variantLens(variant: chess.variant.Variant): Option[Perfs => Perf] = variant match {
-    case chess.variant.Standard      => Some(_.standard)
-    case chess.variant.Chess960      => Some(_.chess960)
+    case chess.variant.Standard => Some(_.standard)
+    case chess.variant.Chess960 => Some(_.chess960)
     case chess.variant.KingOfTheHill => Some(_.kingOfTheHill)
-    case chess.variant.ThreeCheck    => Some(_.threeCheck)
-    case chess.variant.Antichess     => Some(_.antichess)
-    case chess.variant.Atomic        => Some(_.atomic)
-    case chess.variant.Horde         => Some(_.horde)
-    case chess.variant.RacingKings   => Some(_.racingKings)
-    case chess.variant.Crazyhouse    => Some(_.crazyhouse)
-    case _                           => none
+    case chess.variant.ThreeCheck => Some(_.threeCheck)
+    case chess.variant.Antichess => Some(_.antichess)
+    case chess.variant.Atomic => Some(_.atomic)
+    case chess.variant.Horde => Some(_.horde)
+    case chess.variant.RacingKings => Some(_.racingKings)
+    case chess.variant.Crazyhouse => Some(_.crazyhouse)
+    case _ => none
   }
 
   def speedLens(speed: Speed): Perfs => Perf = speed match {
-    case Speed.Bullet => perfs => perfs.bullet
-    case Speed.Blitz => perfs => perfs.blitz
-    case Speed.Classical => perfs => perfs.classical
-    case Speed.Correspondence => perfs => perfs.correspondence
+    case Speed.Bullet =>
+      perfs =>
+        perfs.bullet
+    case Speed.Blitz =>
+      perfs =>
+        perfs.blitz
+    case Speed.Classical =>
+      perfs =>
+        perfs.classical
+    case Speed.Correspondence =>
+      perfs =>
+        perfs.correspondence
   }
 
   val perfsBSONHandler = new BSON[Perfs] {
@@ -172,7 +187,7 @@ case object Perfs {
     import BSON.MapDocument._
 
     def reads(r: BSON.Reader): Perfs = {
-      def perf(key: String) = r.getO[Perf](key) getOrElse Perf.default
+      def perf(key: String) = r.getO[Perf](key).getOrElse(Perf.default)
       Perfs(
         standard = perf("standard"),
         chess960 = perf("chess960"),
@@ -188,39 +203,42 @@ case object Perfs {
         classical = perf("classical"),
         correspondence = perf("correspondence"),
         puzzle = perf("puzzle"),
-        opening = perf("opening"))
+        opening = perf("opening")
+      )
     }
 
-    private def notNew(p: Perf): Option[Perf] = p.nb > 0 option p
+    private def notNew(p: Perf): Option[Perf] = (p.nb > 0).option(p)
 
-    def writes(w: BSON.Writer, o: Perfs) = BSONDocument(
-      "standard" -> notNew(o.standard),
-      "chess960" -> notNew(o.chess960),
-      "kingOfTheHill" -> notNew(o.kingOfTheHill),
-      "threeCheck" -> notNew(o.threeCheck),
-      "antichess" -> notNew(o.antichess),
-      "atomic" -> notNew(o.atomic),
-      "horde" -> notNew(o.horde),
-      "racingKings" -> notNew(o.racingKings),
-      "crazyhouse" -> notNew(o.crazyhouse),
-      "bullet" -> notNew(o.bullet),
-      "blitz" -> notNew(o.blitz),
-      "classical" -> notNew(o.classical),
-      "correspondence" -> notNew(o.correspondence),
-      "puzzle" -> notNew(o.puzzle),
-      "opening" -> notNew(o.opening))
+    def writes(w: BSON.Writer, o: Perfs) =
+      BSONDocument(
+        "standard" -> notNew(o.standard),
+        "chess960" -> notNew(o.chess960),
+        "kingOfTheHill" -> notNew(o.kingOfTheHill),
+        "threeCheck" -> notNew(o.threeCheck),
+        "antichess" -> notNew(o.antichess),
+        "atomic" -> notNew(o.atomic),
+        "horde" -> notNew(o.horde),
+        "racingKings" -> notNew(o.racingKings),
+        "crazyhouse" -> notNew(o.crazyhouse),
+        "bullet" -> notNew(o.bullet),
+        "blitz" -> notNew(o.blitz),
+        "classical" -> notNew(o.classical),
+        "correspondence" -> notNew(o.correspondence),
+        "puzzle" -> notNew(o.puzzle),
+        "opening" -> notNew(o.opening)
+      )
   }
 
   case class Leaderboards(
-    bullet: List[User.LightPerf],
-    blitz: List[User.LightPerf],
-    classical: List[User.LightPerf],
-    crazyhouse: List[User.LightPerf],
-    chess960: List[User.LightPerf],
-    kingOfTheHill: List[User.LightPerf],
-    threeCheck: List[User.LightPerf],
-    antichess: List[User.LightPerf],
-    atomic: List[User.LightPerf],
-    horde: List[User.LightPerf],
-    racingKings: List[User.LightPerf])
+      bullet: List[User.LightPerf],
+      blitz: List[User.LightPerf],
+      classical: List[User.LightPerf],
+      crazyhouse: List[User.LightPerf],
+      chess960: List[User.LightPerf],
+      kingOfTheHill: List[User.LightPerf],
+      threeCheck: List[User.LightPerf],
+      antichess: List[User.LightPerf],
+      atomic: List[User.LightPerf],
+      horde: List[User.LightPerf],
+      racingKings: List[User.LightPerf])
 }

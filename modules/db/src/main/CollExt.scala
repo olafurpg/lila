@@ -29,44 +29,52 @@ trait CollExt { self: dsl with QueryBuilderExt =>
     def byIds[D: BSONDocumentReader](ids: Iterable[String]): Fu[List[D]] =
       byIds[D, String](ids)
 
-    def countSel(selector: BSONDocument): Fu[Int] = coll count selector.some
+    def countSel(selector: BSONDocument): Fu[Int] = coll.count(selector.some)
 
-    def exists(selector: BSONDocument): Fu[Boolean] = countSel(selector).map(0!=)
+    def exists(selector: BSONDocument): Fu[Boolean] = countSel(selector).map(0 !=)
 
-    def byOrderedIds[D: BSONDocumentReader](ids: Iterable[String])(docId: D => String): Fu[List[D]] =
-      byIds[D](ids) map { docs =>
+    def byOrderedIds[D: BSONDocumentReader](ids: Iterable[String])(
+        docId: D => String): Fu[List[D]] =
+      byIds[D](ids).map { docs =>
         val docsMap = docs.map(u => docId(u) -> u).toMap
         ids.flatMap(docsMap.get).toList
       }
     // def byOrderedIds[A <: Identified[String]: TubeInColl](ids: Iterable[String]): Fu[List[A]] =
     //   byOrderedIds[String, A](ids)
 
-    def optionsByOrderedIds[D: BSONDocumentReader](ids: Iterable[String])(docId: D => String): Fu[List[Option[D]]] =
-      byIds[D](ids) map { docs =>
+    def optionsByOrderedIds[D: BSONDocumentReader](ids: Iterable[String])(
+        docId: D => String): Fu[List[Option[D]]] =
+      byIds[D](ids).map { docs =>
         val docsMap = docs.map(u => docId(u) -> u).toMap
         ids.map(docsMap.get).toList
       }
 
     def primitive[V: BSONValueReader](selector: BSONDocument, field: String): Fu[List[V]] =
-      coll.find(selector, $doc(field -> true))
+      coll
+        .find(selector, $doc(field -> true))
         .list[BSONDocument]()
         .map {
-          _ flatMap { _.getAs[V](field) }
+          _.flatMap { _.getAs[V](field) }
         }
 
     def primitiveOne[V: BSONValueReader](selector: BSONDocument, field: String): Fu[Option[V]] =
-      coll.find(selector, $doc(field -> true))
+      coll
+        .find(selector, $doc(field -> true))
         .uno[BSONDocument]
         .map {
-          _ flatMap { _.getAs[V](field) }
+          _.flatMap { _.getAs[V](field) }
         }
 
-    def primitiveOne[V: BSONValueReader](selector: BSONDocument, sort: BSONDocument, field: String): Fu[Option[V]] =
-      coll.find(selector, $doc(field -> true))
+    def primitiveOne[V: BSONValueReader](
+        selector: BSONDocument,
+        sort: BSONDocument,
+        field: String): Fu[Option[V]] =
+      coll
+        .find(selector, $doc(field -> true))
         .sort(sort)
         .uno[BSONDocument]
         .map {
-          _ flatMap { _.getAs[V](field) }
+          _.flatMap { _.getAs[V](field) }
         }
 
     def updateField[V: BSONValueWriter](selector: BSONDocument, field: String, value: V) =
@@ -75,8 +83,9 @@ trait CollExt { self: dsl with QueryBuilderExt =>
     def updateFieldUnchecked[V: BSONValueWriter](selector: BSONDocument, field: String, value: V) =
       coll.uncheckedUpdate(selector, $set(field -> value))
 
-    def fetchUpdate[D: BSONDocumentHandler](selector: BSONDocument)(update: D => BSONDocument): Funit =
-      uno[D](selector) flatMap {
+    def fetchUpdate[D: BSONDocumentHandler](selector: BSONDocument)(
+        update: D => BSONDocument): Funit =
+      uno[D](selector).flatMap {
         _ ?? { doc =>
           coll.update(selector, update(doc)).void
         }

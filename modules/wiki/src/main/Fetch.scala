@@ -11,27 +11,27 @@ import Page.DefaultLang
 
 import lila.db.dsl._
 
-private[wiki] final class Fetch(
-    coll: Coll,
-    gitUrl: String,
-    markdownPath: String) {
+private[wiki] final class Fetch(coll: Coll, gitUrl: String, markdownPath: String) {
 
   import Page.PageBSONHandler
 
-  def apply: Funit = getFiles flatMap { files =>
-    val (defaultPages, langPages) = files.map(filePage).flatten partition (_.isDefaultLang)
-    val newLangPages = (langPages map { page =>
-      defaultPages find (_.number == page.number) map { default =>
+  def apply: Funit = getFiles.flatMap { files =>
+    val (defaultPages, langPages) = files.map(filePage).flatten.partition(_.isDefaultLang)
+    val newLangPages = langPages.map { page =>
+      defaultPages.find(_.number == page.number).map { default =>
         page.copy(slug = default.slug)
       }
-    }).flatten
-    coll.remove($empty) >> (newLangPages ::: defaultPages).map { page =>
-      coll.insert[Page](page)
-    }.sequenceFu.void
+    }.flatten
+    coll.remove($empty) >> (newLangPages ::: defaultPages)
+      .map { page =>
+        coll.insert[Page](page)
+      }
+      .sequenceFu
+      .void
   }
 
   private def filePage(file: File): Option[Page] = {
-    val name = """^(.+)\.md$""".r.replaceAllIn(file.getName, _ group 1)
+    val name = """^(.+)\.md$""".r.replaceAllIn(file.getName, _.group(1))
     if (name == "Home") None
     else Page.make(name, toHtml(file))
   }
@@ -44,7 +44,7 @@ private[wiki] final class Fetch(
       .setDirectory(dir)
       .setBare(false)
       .call
-    dir.listFiles.toList filter (_.isFile) sortBy (_.getName)
+    dir.listFiles.toList.filter(_.isFile).sortBy(_.getName)
   }
 
   private def toHtml(file: File): String = {

@@ -15,7 +15,7 @@ object AnalysisRepo {
 
   type ID = String
 
-  def save(analysis: Analysis) = coll insert analysis void
+  def save(analysis: Analysis) = coll.insert(analysis) void
 
   def byId(id: ID): Fu[Option[Analysis]] = coll.byId[Analysis](id)
 
@@ -23,13 +23,13 @@ object AnalysisRepo {
     coll.optionsByOrderedIds[Analysis](ids)(_.id)
 
   def associateToGames(games: List[Game]): Fu[List[(Game, Analysis)]] =
-    byIds(games.map(_.id)) map { as =>
-      games zip as collect {
+    byIds(games.map(_.id)).map { as =>
+      games.zip(as).collect {
         case (game, Some(analysis)) => game -> analysis
       }
     }
 
-  def remove(id: String) = coll remove $id(id)
+  def remove(id: String) = coll.remove($id(id))
 
-  def exists(id: String) = coll exists $id(id)
+  def exists(id: String) = coll.exists($id(id))
 }

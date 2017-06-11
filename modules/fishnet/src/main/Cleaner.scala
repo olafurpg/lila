@@ -21,26 +21,37 @@ private final class Cleaner(
 
   private def durationAgo(d: FiniteDuration) = DateTime.now.minusSeconds(d.toSeconds.toInt)
 
-  private def cleanMoves: Unit = moveDb.clean map { moves =>
-    moves foreach { move =>
+  private def cleanMoves: Unit = moveDb.clean.map { moves =>
+    moves.foreach { move =>
       logger.info(s"Timeout move $move")
-      move.acquired foreach { ack =>
+      move.acquired.foreach { ack =>
         Monitor.timeout(move, ack.userId)
       }
     }
   }
 
-  private def cleanAnalysis: Funit = analysisColl.find(BSONDocument(
-    "acquired.date" -> BSONDocument("$lt" -> durationAgo(analysisTimeoutBase))
-  )).sort(BSONDocument("acquired.date" -> 1)).cursor[Work.Analysis]().gather[List](100).flatMap {
-    _.filter { ana =>
-      ana.acquiredAt.??(_ isBefore durationAgo(analysisTimeout(ana.nbPly)))
-    }.map { ana =>
-      repo.updateOrGiveUpAnalysis(ana.timeout) >>-
-        logger.info(s"Timeout analysis $ana") >>-
-        ana.acquired.foreach { ack => Monitor.timeout(ana, ack.userId) }
-    }.sequenceFu.void
-  }
+  private def cleanAnalysis: Funit =
+    analysisColl
+      .find(
+        BSONDocument(
+          "acquired.date" -> BSONDocument("$lt" -> durationAgo(analysisTimeoutBase))
+        ))
+      .sort(BSONDocument("acquired.date" -> 1))
+      .cursor[Work.Analysis]()
+      .gather[List](100)
+      .flatMap {
+        _.filter { ana =>
+          ana.acquiredAt.??(_.isBefore(durationAgo(analysisTimeout(ana.nbPly))))
+        }.map { ana =>
+            repo.updateOrGiveUpAnalysis(ana.timeout) >>-
+              logger.info(s"Timeout analysis $ana") >>-
+              ana.acquired.foreach { ack =>
+                Monitor.timeout(ana, ack.userId)
+              }
+          }
+          .sequenceFu
+          .void
+      }
 
   private def scheduleMoves = scheduler.once(1 second)(cleanMoves)
   private def scheduleAnalysis = scheduler.once(5 second)(cleanAnalysis)

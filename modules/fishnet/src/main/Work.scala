@@ -19,44 +19,33 @@ sealed trait Work {
 
   def acquiredAt = acquired.map(_.date)
   def acquiredByKey = acquired.map(_.clientKey)
-  def isAcquiredBy(client: Client) = acquiredByKey contains client.key
+  def isAcquiredBy(client: Client) = acquiredByKey.contains(client.key)
   def isAcquired = acquired.isDefined
   def nonAcquired = !isAcquired
   def canAcquire(client: Client) = lastTryByKey.fold(true)(client.key !=)
 
-  def acquiredBefore(date: DateTime) = acquiredAt.??(_ isBefore date)
+  def acquiredBefore(date: DateTime) = acquiredAt.??(_.isBefore(date))
 }
 
 object Work {
 
   case class Id(value: String) extends AnyVal with StringValue
 
-  case class Acquired(
-      clientKey: Client.Key,
-      userId: Client.UserId,
-      date: DateTime) {
+  case class Acquired(clientKey: Client.Key, userId: Client.UserId, date: DateTime) {
 
     def ageInMillis = nowMillis - date.getMillis
 
     override def toString = s"by $userId at $date"
   }
 
-  case class Game(
-      id: String,
-      initialFen: Option[FEN],
-      variant: Variant,
-      moves: String) {
+  case class Game(id: String, initialFen: Option[FEN], variant: Variant, moves: String) {
 
     def moveList = moves.split(' ').toList
   }
 
-  case class Sender(
-      userId: Option[String],
-      ip: Option[String],
-      mod: Boolean,
-      system: Boolean) {
+  case class Sender(userId: Option[String], ip: Option[String], mod: Boolean, system: Boolean) {
 
-    override def toString = if (system) "lichess" else userId orElse ip getOrElse "unknown"
+    override def toString = if (system) "lichess" else userId.orElse(ip).getOrElse("unknown")
   }
 
   case class Move(
@@ -67,17 +56,17 @@ object Work {
       tries: Int,
       lastTryByKey: Option[Client.Key],
       acquired: Option[Acquired],
-      createdAt: DateTime) extends Work {
+      createdAt: DateTime)
+      extends Work {
 
     def skill = Client.Skill.Move
 
-    def assignTo(client: Client) = copy(
-      acquired = Acquired(
-        clientKey = client.key,
-        userId = client.userId,
-        date = DateTime.now).some,
-      lastTryByKey = client.key.some,
-      tries = tries + 1)
+    def assignTo(client: Client) =
+      copy(
+        acquired =
+          Acquired(clientKey = client.key, userId = client.userId, date = DateTime.now).some,
+        lastTryByKey = client.key.some,
+        tries = tries + 1)
 
     def timeout = copy(acquired = none)
     def invalid = copy(acquired = none)
@@ -86,7 +75,8 @@ object Work {
 
     def similar(to: Move) = game.id == to.game.id && currentFen == to.currentFen
 
-    override def toString = s"id:$id game:${game.id} level:$level tries:$tries created:$createdAt acquired:$acquired"
+    override def toString =
+      s"id:$id game:${game.id} level:$level tries:$tries created:$createdAt acquired:$acquired"
   }
 
   case class Analysis(
@@ -98,17 +88,17 @@ object Work {
       tries: Int,
       lastTryByKey: Option[Client.Key],
       acquired: Option[Acquired],
-      createdAt: DateTime) extends Work {
+      createdAt: DateTime)
+      extends Work {
 
     def skill = Client.Skill.Analysis
 
-    def assignTo(client: Client) = copy(
-      acquired = Acquired(
-        clientKey = client.key,
-        userId = client.userId,
-        date = DateTime.now).some,
-      lastTryByKey = client.key.some,
-      tries = tries + 1)
+    def assignTo(client: Client) =
+      copy(
+        acquired =
+          Acquired(clientKey = client.key, userId = client.userId, date = DateTime.now).some,
+        lastTryByKey = client.key.some,
+        tries = tries + 1)
 
     def timeout = copy(acquired = none)
     def invalid = copy(acquired = none)
@@ -118,17 +108,18 @@ object Work {
 
     def abort = copy(acquired = none)
 
-    def inProgress = acquired map { a =>
+    def inProgress = acquired.map { a =>
       InProgress(a.userId, a.date)
     }
 
-    override def toString = s"id:$id game:${game.id} tries:$tries requestedBy:$sender acquired:$acquired"
+    override def toString =
+      s"id:$id game:${game.id} tries:$tries requestedBy:$sender acquired:$acquired"
   }
 
-  def makeId = Id(scala.util.Random.alphanumeric take 8 mkString)
+  def makeId = Id(scala.util.Random.alphanumeric.take(8) mkString)
 
   case class InProgress(by: Client.UserId, since: DateTime) {
 
-    def byLichess = by.value startsWith "lichess-"
+    def byLichess = by.value.startsWith("lichess-")
   }
 }

@@ -4,7 +4,7 @@ package templating
 import ornicar.scalalib
 import play.twirl.api.Html
 
-import lila.api.Env.{ current => apiEnv }
+import lila.api.Env.{current => apiEnv}
 
 object Environment
     extends scalaz.syntax.ToIdOps
@@ -39,9 +39,8 @@ object Environment
     with TournamentHelper
     with SimulHelper {
 
-  implicit val LilaHtmlMonoid = scalaz.Monoid.instance[Html](
-    (a, b) => Html(a.body + b.body),
-    Html(""))
+  implicit val LilaHtmlMonoid =
+    scalaz.Monoid.instance[Html]((a, b) => Html(a.body + b.body), Html(""))
 
   type FormWithCaptcha = (play.api.data.Form[_], lila.common.Captcha)
 
@@ -54,7 +53,7 @@ object Environment
 
   def explorerEndpoint = apiEnv.ExplorerEndpoint
 
-  def globalCasualOnlyMessage = Env.setup.CasualOnly option {
+  def globalCasualOnlyMessage = Env.setup.CasualOnly.option {
     "Due to temporary maintenance on the servers, only casual games are available."
   }
 
@@ -72,8 +71,8 @@ object Environment
   val nonPuzzlePerfTypeNameIcons = {
     import play.api.libs.json.Json
     Html {
-      Json stringify {
-        Json toJson lila.rating.PerfType.nonPuzzleIconByName
+      Json.stringify {
+        Json.toJson(lila.rating.PerfType.nonPuzzleIconByName)
       }
     }
   }

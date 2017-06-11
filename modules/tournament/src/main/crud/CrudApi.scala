@@ -1,17 +1,17 @@
 package lila.tournament
 package crud
 
-import org.joda.time.{ DateTime, DateTimeZone }
+import org.joda.time.{DateTime, DateTimeZone}
 
 import lila.user.User
 
 final class CrudApi {
 
-  def list = TournamentRepo uniques 30
+  def list = TournamentRepo.uniques(30)
 
-  def one(id: String) = TournamentRepo uniqueById id
+  def one(id: String) = TournamentRepo.uniqueById(id)
 
-  def editForm(tour: Tournament) = CrudForm.apply fill {
+  def editForm(tour: Tournament) = CrudForm.apply.fill {
     val startsUtc = tour.startsAt.toDateTime(DateTimeZone.UTC)
     CrudForm.Data(
       name = tour.name,
@@ -25,29 +25,32 @@ final class CrudApi {
       dateMinute = startsUtc.getMinuteOfHour,
       image = ~tour.spotlight.flatMap(_.iconImg),
       headline = tour.spotlight.??(_.headline),
-      description = tour.spotlight.??(_.description))
+      description = tour.spotlight.??(_.description)
+    )
   }
 
   def update(old: Tournament, data: CrudForm.Data) =
-    TournamentRepo update updateTour(old, data) void
+    TournamentRepo.update(updateTour(old, data)) void
 
   def createForm = CrudForm.apply
 
   def create(data: CrudForm.Data, owner: User): Fu[Tournament] = {
     val tour = updateTour(empty, data).copy(createdBy = owner.id)
-    TournamentRepo insert tour inject tour
+    TournamentRepo.insert(tour).inject(tour)
   }
 
-  private def empty = Tournament.make(
-    createdByUserId = "lichess",
-    clock = TournamentClock(0, 0),
-    minutes = 0,
-    system = System.Arena,
-    variant = chess.variant.Standard,
-    position = chess.StartingPosition.initial,
-    mode = chess.Mode.Rated,
-    `private` = false,
-    waitMinutes = 0)
+  private def empty =
+    Tournament.make(
+      createdByUserId = "lichess",
+      clock = TournamentClock(0, 0),
+      minutes = 0,
+      system = System.Arena,
+      variant = chess.variant.Standard,
+      position = chess.StartingPosition.initial,
+      mode = chess.Mode.Rated,
+      `private` = false,
+      waitMinutes = 0
+    )
 
   private def updateTour(tour: Tournament, data: CrudForm.Data) = {
     import data._
@@ -70,6 +73,7 @@ final class CrudApi {
         description = description,
         homepageHours = homepageHours.some.filterNot(0 ==),
         iconFont = none,
-        iconImg = image.some.filter(_.nonEmpty)).some)
+        iconImg = image.some.filter(_.nonEmpty)).some
+    )
   }
 }

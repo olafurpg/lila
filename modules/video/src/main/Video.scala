@@ -19,8 +19,8 @@ case class Video(
   def thumbnail = s"http://img.youtube.com/vi/$id/0.jpg"
 
   def similarity(other: Video) =
-    (tags intersect other.tags).size +
-      (targets intersect other.targets).size +
+    tags.intersect(other.tags).size +
+      targets.intersect(other.targets).size +
       (if (author == other.author) 1 else 0)
 
   def durationString = metadata.duration.map { seconds =>
@@ -37,11 +37,11 @@ object Target {
   val EXPERT = 4
 
   def name(target: Int) = target match {
-    case BEGINNER     => "beginner"
+    case BEGINNER => "beginner"
     case INTERMEDIATE => "intermediate"
-    case ADVANCED     => "advanced"
-    case EXPERT       => "expert"
-    case _            => ""
+    case ADVANCED => "advanced"
+    case EXPERT => "expert"
+    case _ => ""
   }
 }
 

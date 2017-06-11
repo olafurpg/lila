@@ -2,13 +2,13 @@ package lila.i18n
 
 object LangList {
 
-  def name(code: String) = all get code
+  def name(code: String) = all.get(code)
 
   def nameOrCode(code: String) = name(code) | code
 
-  def exists(code: String) = all contains code
+  def exists(code: String) = all.contains(code)
 
-  lazy val sortedList = all.toList sortBy (_._1)
+  lazy val sortedList = all.toList.sortBy(_._1)
 
   val all = Map(
     "ab" -> "аҧсшәа",
@@ -188,5 +188,6 @@ object LangList {
     "yo" -> "Yorùbá",
     "za" -> "Sawcuengh",
     // the values for 'za' (Zhang languages) are made up. Contact with a native speaker to determine their native name is necessary (won't be hard; it has many speakers)
-    "zu" -> "isiZulu")
+    "zu" -> "isiZulu"
+  )
 }

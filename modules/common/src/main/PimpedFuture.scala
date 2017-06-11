@@ -11,28 +11,28 @@ object PimpedFuture {
 
   final class LilaPimpedFuture[A](val fua: Fu[A]) extends AnyVal {
 
-    def >>-(sideEffect: => Unit): Fu[A] = fua andThen {
+    def >>-(sideEffect: => Unit): Fu[A] = fua.andThen {
       case _ => sideEffect
     }
 
-    def >>[B](fub: => Fu[B]): Fu[B] = fua flatMap (_ => fub)
+    def >>[B](fub: => Fu[B]): Fu[B] = fua.flatMap(_ => fub)
 
-    def void: Funit = fua map (_ => Unit)
+    def void: Funit = fua.map(_ => Unit)
 
-    def inject[B](b: => B): Fu[B] = fua map (_ => b)
+    def inject[B](b: => B): Fu[B] = fua.map(_ => b)
 
     def injectAnyway[B](b: => B): Fu[B] = fold(_ => b, _ => b)
 
     def effectFold(fail: Exception => Unit, succ: A => Unit) {
-      fua onComplete {
+      fua.onComplete {
         case scala.util.Failure(e: Exception) => fail(e)
-        case scala.util.Failure(e)            => throw e // Throwables
-        case scala.util.Success(e)            => succ(e)
+        case scala.util.Failure(e) => throw e // Throwables
+        case scala.util.Success(e) => succ(e)
       }
     }
 
     def andThenAnyway(sideEffect: => Unit): Fu[A] = {
-      fua onComplete {
+      fua.onComplete {
         case scala.util.Failure(_) => sideEffect
         case scala.util.Success(_) => sideEffect
       }
@@ -40,35 +40,37 @@ object PimpedFuture {
     }
 
     def fold[B](fail: Exception => B, succ: A => B): Fu[B] =
-      fua map succ recover { case e: Exception => fail(e) }
+      fua.map(succ).recover { case e: Exception => fail(e) }
 
     def flatFold[B](fail: Exception => Fu[B], succ: A => Fu[B]): Fu[B] =
-      fua flatMap succ recoverWith { case e: Exception => fail(e) }
+      fua.flatMap(succ).recoverWith { case e: Exception => fail(e) }
 
     def logFailure(logger: => lila.log.Logger, msg: Exception => String): Fu[A] =
-      addFailureEffect { e => logger.warn(msg(e), e) }
+      addFailureEffect { e =>
+        logger.warn(msg(e), e)
+      }
     def logFailure(logger: => lila.log.Logger): Fu[A] = logFailure(logger, _.toString)
 
     def addEffect(effect: A => Unit) = {
-      fua foreach effect
+      fua.foreach(effect)
       fua
     }
 
     def addFailureEffect(effect: Exception => Unit) = {
-      fua onFailure {
+      fua.onFailure {
         case e: Exception => effect(e)
       }
       fua
     }
 
     def addEffects(fail: Exception => Unit, succ: A => Unit): Fu[A] =
-      fua andThen {
+      fua.andThen {
         case scala.util.Failure(e: Exception) => fail(e)
-        case scala.util.Failure(e)            => throw e // Throwables
-        case scala.util.Success(e)            => succ(e)
+        case scala.util.Failure(e) => throw e // Throwables
+        case scala.util.Success(e) => succ(e)
       }
 
-    def mapFailure(f: Exception => Exception) = fua recover {
+    def mapFailure(f: Exception => Exception) = fua.recover {
       case cause: Exception => throw f(cause)
     }
 
@@ -97,9 +99,10 @@ object PimpedFuture {
       scala.concurrent.Await.result(fua, seconds.seconds)
     }
 
-    def withTimeout(duration: FiniteDuration, error: => Throwable)(implicit system: akka.actor.ActorSystem): Fu[A] = {
-      Future firstCompletedOf Seq(fua,
-        akka.pattern.after(duration, system.scheduler)(Future failed error))
+    def withTimeout(duration: FiniteDuration, error: => Throwable)(
+        implicit system: akka.actor.ActorSystem): Fu[A] = {
+      Future.firstCompletedOf(
+        Seq(fua, akka.pattern.after(duration, system.scheduler)(Future.failed(error))))
     }
 
     def chronometer = lila.common.Chronometer(fua)

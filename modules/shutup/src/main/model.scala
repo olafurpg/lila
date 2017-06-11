@@ -10,17 +10,17 @@ case class UserRecord(
 
   def userId = _id
 
-  def reports: List[TextReport] = List(
-    TextReport(TextType.PublicForumMessage, ~puf),
-    TextReport(TextType.TeamForumMessage, ~tef),
-    TextReport(TextType.PrivateMessage, ~prm),
-    TextReport(TextType.PrivateChat, ~prc),
-    TextReport(TextType.PublicChat, ~puc))
+  def reports: List[TextReport] =
+    List(
+      TextReport(TextType.PublicForumMessage, ~puf),
+      TextReport(TextType.TeamForumMessage, ~tef),
+      TextReport(TextType.PrivateMessage, ~prm),
+      TextReport(TextType.PrivateChat, ~prc),
+      TextReport(TextType.PublicChat, ~puc)
+    )
 }
 
-case class TextAnalysis(
-    text: String,
-    badWords: List[String]) {
+case class TextAnalysis(text: String, badWords: List[String]) {
 
   lazy val nbWords = text.split("""\W+""").size
 
@@ -29,10 +29,7 @@ case class TextAnalysis(
   def ratio: Double = if (nbWords == 0) 0 else nbBadWords.toDouble / nbWords
 }
 
-sealed abstract class TextType(
-  val key: String,
-  val rotation: Int,
-  val name: String)
+sealed abstract class TextType(val key: String, val rotation: Int, val name: String)
 
 object TextType {
 
@@ -47,7 +44,7 @@ case class TextReport(textType: TextType, ratios: List[Double]) {
 
   def minRatios = textType.rotation / 10
   def nbBad = ratios.count(_ > TextReport.unacceptableRatio)
-  def tolerableNb = (ratios.size / 10) max 3
+  def tolerableNb = (ratios.size / 10).max(3)
 
   def unacceptable = (ratios.size >= minRatios) && (nbBad > tolerableNb)
 }

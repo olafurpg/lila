@@ -1,19 +1,19 @@
 package lila.api
 
-import play.api.libs.json.{ JsObject, JsArray }
-import play.api.mvc.{ Request, RequestHeader }
+import play.api.libs.json.{JsObject, JsArray}
+import play.api.mvc.{Request, RequestHeader}
 
 import lila.pref.Pref
-import lila.user.{ UserContext, HeaderUserContext, BodyUserContext }
+import lila.user.{UserContext, HeaderUserContext, BodyUserContext}
 
 case class PageData(
-  friends: List[lila.common.LightUser],
-  teamNbRequests: Int,
-  nbMessages: Int,
-  nbChallenges: Int,
-  pref: Pref,
-  blindMode: Boolean,
-  hasFingerprint: Boolean)
+    friends: List[lila.common.LightUser],
+    teamNbRequests: Int,
+    nbMessages: Int,
+    nbChallenges: Int,
+    pref: Pref,
+    blindMode: Boolean,
+    hasFingerprint: Boolean)
 
 object PageData {
 
@@ -34,7 +34,7 @@ sealed trait Context extends lila.user.UserContextWrapper {
   def pref = pageData.pref
   def blindMode = pageData.blindMode
 
-  def is3d = ctxPref("is3d") contains "true"
+  def is3d = ctxPref("is3d").contains("true")
 
   def currentTheme =
     ctxPref("theme").fold(Pref.default.realTheme)(lila.pref.Theme.apply)
@@ -53,32 +53,29 @@ sealed trait Context extends lila.user.UserContextWrapper {
 
   lazy val currentBg = ctxPref("bg") | "light"
 
-  def transpBgImg = currentBg == "transp" option bgImg
+  def transpBgImg = (currentBg == "transp").option(bgImg)
 
   def bgImg = ctxPref("bgImg") | Pref.defaultBgImg
 
-  def mobileApiVersion = Mobile.Api requestVersion req
+  def mobileApiVersion = Mobile.Api.requestVersion(req)
 
   def requiresFingerprint = isAuth && !pageData.hasFingerprint
 
   private def ctxPref(name: String): Option[String] =
-    userContext.req.session get name orElse { pref get name }
+    userContext.req.session.get(name).orElse { pref.get(name) }
 }
 
-sealed abstract class BaseContext(
-  val userContext: lila.user.UserContext,
-  val pageData: PageData) extends Context
+sealed abstract class BaseContext(val userContext: lila.user.UserContext, val pageData: PageData)
+    extends Context
 
-final class BodyContext[A](
-    val bodyContext: BodyUserContext[A],
-    data: PageData) extends BaseContext(bodyContext, data) {
+final class BodyContext[A](val bodyContext: BodyUserContext[A], data: PageData)
+    extends BaseContext(bodyContext, data) {
 
   def body = bodyContext.body
 }
 
-final class HeaderContext(
-  headerContext: HeaderUserContext,
-  data: PageData) extends BaseContext(headerContext, data)
+final class HeaderContext(headerContext: HeaderUserContext, data: PageData)
+    extends BaseContext(headerContext, data)
 
 object Context {
 

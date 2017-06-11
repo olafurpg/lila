@@ -21,11 +21,11 @@ case class Post(
 
   def id = _id
 
-  def showAuthor = (author map (_.trim) filter ("" !=)) | User.anonymous
+  def showAuthor = author.map(_.trim).filter("" !=) | User.anonymous
 
   def showUserIdOrAuthor = userId | showAuthor
 
-  def isTeam = categId startsWith teamSlug("")
+  def isTeam = categId.startsWith(teamSlug(""))
 
   def isStaff = categId == "staff"
 }
@@ -35,26 +35,28 @@ object Post {
   val idSize = 8
 
   def make(
-    topicId: String,
-    categId: String,
-    author: Option[String],
-    userId: Option[String],
-    ip: Option[String],
-    text: String,
-    number: Int,
-    lang: Option[String],
-    troll: Boolean,
-    hidden: Boolean): Post = Post(
-    _id = Random nextStringUppercase idSize,
-    topicId = topicId,
-    author = author,
-    userId = userId,
-    ip = ip,
-    text = text,
-    number = number,
-    lang = lang,
-    troll = troll,
-    hidden = hidden,
-    createdAt = DateTime.now,
-    categId = categId)
+      topicId: String,
+      categId: String,
+      author: Option[String],
+      userId: Option[String],
+      ip: Option[String],
+      text: String,
+      number: Int,
+      lang: Option[String],
+      troll: Boolean,
+      hidden: Boolean): Post =
+    Post(
+      _id = Random.nextStringUppercase(idSize),
+      topicId = topicId,
+      author = author,
+      userId = userId,
+      ip = ip,
+      text = text,
+      number = number,
+      lang = lang,
+      troll = troll,
+      hidden = hidden,
+      createdAt = DateTime.now,
+      categId = categId
+    )
 }

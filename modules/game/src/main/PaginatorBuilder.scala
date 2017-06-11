@@ -5,10 +5,7 @@ import lila.common.paginator._
 import lila.db.dsl._
 import lila.db.paginator._
 
-private[game] final class PaginatorBuilder(
-    coll: Coll,
-    cached: Cached,
-    maxPerPage: Int) {
+private[game] final class PaginatorBuilder(coll: Coll, cached: Cached, maxPerPage: Int) {
 
   private val readPreference = reactivemongo.api.ReadPreference.secondaryPreferred
 
@@ -26,9 +23,7 @@ private[game] final class PaginatorBuilder(
     paginator(adapter, page)
 
   private def cacheAdapter(selector: Bdoc, sort: Bdoc, nbResults: Fu[Int]): AdapterLike[Game] =
-    new CachedAdapter(
-      adapter = noCacheAdapter(selector, sort),
-      nbResults = nbResults)
+    new CachedAdapter(adapter = noCacheAdapter(selector, sort), nbResults = nbResults)
 
   private def noCacheAdapter(selector: Bdoc, sort: Bdoc): AdapterLike[Game] =
     new Adapter[Game](

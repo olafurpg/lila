@@ -2,7 +2,7 @@ package lila.tournament
 
 private[tournament] sealed abstract class Status(val id: Int) extends Ordered[Status] {
 
-  def compare(other: Status) = id compare other.id
+  def compare(other: Status) = id.compare(other.id)
 
   def name = toString
 
@@ -18,7 +18,9 @@ private[tournament] object Status {
 
   val all = List(Created, Started, Finished)
 
-  val byId = all map { v => (v.id, v) } toMap
+  val byId = all.map { v =>
+    (v.id, v)
+  } toMap
 
-  def apply(id: Int): Option[Status] = byId get id
+  def apply(id: Int): Option[Status] = byId.get(id)
 }

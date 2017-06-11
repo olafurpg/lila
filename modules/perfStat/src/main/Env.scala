@@ -14,39 +14,45 @@ final class Env(
     db: lila.db.Env) {
 
   private val settings = new {
-    val CollectionPerfStat = config getString "collection.perf_stat"
+    val CollectionPerfStat = config.getString("collection.perf_stat")
   }
   import settings._
 
-  lazy val storage = new PerfStatStorage(
-    coll = db(CollectionPerfStat))
+  lazy val storage = new PerfStatStorage(coll = db(CollectionPerfStat))
 
   lazy val indexer = new PerfStatIndexer(
     storage = storage,
-    sequencer = system.actorOf(Props(
-      classOf[lila.hub.Sequencer],
-      None, None, lila.log("perfStat")
-    )))
+    sequencer = system.actorOf(
+      Props(
+        classOf[lila.hub.Sequencer],
+        None,
+        None,
+        lila.log("perfStat")
+      )))
 
   lazy val jsonView = new JsonView(lightUser)
 
   def get(user: lila.user.User, perfType: lila.rating.PerfType) =
-    storage.find(user.id, perfType) orElse {
-      indexer.userPerf(user, perfType) >> storage.find(user.id, perfType)
-    } map (_ | PerfStat.init(user.id, perfType))
+    storage
+      .find(user.id, perfType)
+      .orElse {
+        indexer.userPerf(user, perfType) >> storage.find(user.id, perfType)
+      }
+      .map(_ | PerfStat.init(user.id, perfType))
 
   system.lilaBus.subscribe(system.actorOf(Props(new Actor {
     def receive = {
-      case lila.game.actorApi.FinishGame(game, _, _) if !game.aborted => indexer addGame game
+      case lila.game.actorApi.FinishGame(game, _, _) if !game.aborted => indexer.addGame(game)
     }
   })), 'finishGame)
 }
 
 object Env {
 
-  lazy val current: Env = "perfStat" boot new Env(
-    config = lila.common.PlayApp loadConfig "perfStat",
-    system = lila.common.PlayApp.system,
-    lightUser = lila.user.Env.current.lightUser,
-    db = lila.db.Env.current)
+  lazy val current: Env = "perfStat".boot(
+    new Env(
+      config = lila.common.PlayApp.loadConfig("perfStat"),
+      system = lila.common.PlayApp.system,
+      lightUser = lila.user.Env.current.lightUser,
+      db = lila.db.Env.current))
 }

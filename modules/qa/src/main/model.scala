@@ -22,7 +22,7 @@ case class Question(
   def id = _id
 
   def slug = {
-    val s = lila.common.String slugify title
+    val s = lila.common.String.slugify(title)
     if (s.isEmpty) "-" else s
   }
 
@@ -75,12 +75,12 @@ case class Vote(up: Set[String], down: Set[String], score: Int) {
 }
 
 case class Comment(
-  id: CommentId, // random string
-  userId: String,
-  body: String,
-  createdAt: DateTime)
+    id: CommentId, // random string
+    userId: String,
+    body: String,
+    createdAt: DateTime)
 
 object Comment {
 
-  def makeId = ornicar.scalalib.Random nextStringUppercase 8
+  def makeId = ornicar.scalalib.Random.nextStringUppercase(8)
 }
