@@ -4,7 +4,7 @@ import akka.actor._
 import com.typesafe.config.Config
 
 import lila.db.dsl.Coll
-import lila.security.{ Firewall, UserSpy }
+import lila.security.{Firewall, UserSpy}
 
 final class Env(
     config: Config,
@@ -19,13 +19,13 @@ final class Env(
     emailAddress: lila.security.EmailAddress) {
 
   private object settings {
-    val CollectionPlayerAssessment = config getString "collection.player_assessment"
-    val CollectionBoosting = config getString "collection.boosting"
-    val CollectionModlog = config getString "collection.modlog"
-    val CollectionGamingHistory = config getString "collection.gaming_history"
-    val ActorName = config getString "actor.name"
-    val NbGamesToMark = config getInt "boosting.nb_games_to_mark"
-    val RatioGamesToMark = config getDouble "boosting.ratio_games_to_mark"
+    val CollectionPlayerAssessment = config.getString("collection.player_assessment")
+    val CollectionBoosting = config.getString("collection.boosting")
+    val CollectionModlog = config.getString("collection.modlog")
+    val CollectionGamingHistory = config.getString("collection.gaming_history")
+    val ActorName = config.getString("actor.name")
+    val NbGamesToMark = config.getInt("boosting.nb_games_to_mark")
+    val RatioGamesToMark = config.getDouble("boosting.ratio_games_to_mark")
   }
   import settings._
 
@@ -53,43 +53,53 @@ final class Env(
     modApi = api,
     reporter = hub.actor.report,
     fishnet = hub.actor.fishnet,
-    userIdsSharingIp = securityApi.userIdsSharingIp)
+    userIdsSharingIp = securityApi.userIdsSharingIp
+  )
 
   lazy val gamify = new Gamify(
     logColl = logColl,
     reportColl = reportColl,
     historyColl = db(CollectionGamingHistory))
 
-  lazy val search = new UserSearch(
-    securityApi = securityApi,
-    emailAddress = emailAddress)
+  lazy val search = new UserSearch(securityApi = securityApi, emailAddress = emailAddress)
 
   // api actor
-  system.lilaBus.subscribe(system.actorOf(Props(new Actor {
-    def receive = {
-      case lila.hub.actorApi.mod.MarkCheater(userId) => api autoAdjust userId
-      case lila.analyse.actorApi.AnalysisReady(game, analysis) =>
-        assessApi.onAnalysisReady(game, analysis)
-      case lila.game.actorApi.FinishGame(game, whiteUserOption, blackUserOption) if !game.aborted =>
-        (whiteUserOption |@| blackUserOption) apply {
-          case (whiteUser, blackUser) => boosting.check(game, whiteUser, blackUser) >>
-            assessApi.onGameReady(game, whiteUser, blackUser)
+  system.lilaBus.subscribe(
+    system.actorOf(
+      Props(new Actor {
+        def receive = {
+          case lila.hub.actorApi.mod.MarkCheater(userId) => api.autoAdjust(userId)
+          case lila.analyse.actorApi.AnalysisReady(game, analysis) =>
+            assessApi.onAnalysisReady(game, analysis)
+          case lila.game.actorApi.FinishGame(game, whiteUserOption, blackUserOption)
+              if !game.aborted =>
+            (whiteUserOption |@| blackUserOption).apply {
+              case (whiteUser, blackUser) =>
+                boosting.check(game, whiteUser, blackUser) >>
+                  assessApi.onGameReady(game, whiteUser, blackUser)
+            }
         }
-    }
-  }), name = ActorName), 'finishGame, 'analysisReady)
+      }),
+      name = ActorName
+    ),
+    'finishGame,
+    'analysisReady
+  )
 }
 
 object Env {
 
-  lazy val current = "mod" boot new Env(
-    config = lila.common.PlayApp loadConfig "mod",
-    db = lila.db.Env.current,
-    hub = lila.hub.Env.current,
-    system = lila.common.PlayApp.system,
-    firewall = lila.security.Env.current.firewall,
-    reportColl = lila.report.Env.current.reportColl,
-    userSpy = lila.security.Env.current.userSpy,
-    lightUserApi = lila.user.Env.current.lightUserApi,
-    securityApi = lila.security.Env.current.api,
-    emailAddress = lila.security.Env.current.emailAddress)
+  lazy val current = "mod".boot(
+    new Env(
+      config = lila.common.PlayApp.loadConfig("mod"),
+      db = lila.db.Env.current,
+      hub = lila.hub.Env.current,
+      system = lila.common.PlayApp.system,
+      firewall = lila.security.Env.current.firewall,
+      reportColl = lila.report.Env.current.reportColl,
+      userSpy = lila.security.Env.current.userSpy,
+      lightUserApi = lila.user.Env.current.lightUserApi,
+      securityApi = lila.security.Env.current.api,
+      emailAddress = lila.security.Env.current.emailAddress
+    ))
 }

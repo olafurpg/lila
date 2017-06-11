@@ -11,5 +11,5 @@ object PrefCateg {
 
   val all = List(GameDisplay, ChessClock, GameBehavior, Privacy)
 
-  def apply(slug: String) = all find (_.slug == slug)
+  def apply(slug: String) = all.find(_.slug == slug)
 }

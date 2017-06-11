@@ -50,39 +50,57 @@ case class Pref(
 
   def coordColorName = Color.choices.toMap.get(coordColor).fold("random")(_.toLowerCase)
 
-  def hasSeenVerifyTitle = tags contains Tag.verifyTitle
+  def hasSeenVerifyTitle = tags.contains(Tag.verifyTitle)
 
   def get(name: String): Option[String] = name match {
-    case "bg"         => transp.fold("transp", dark.fold("dark", "light")).some
-    case "bgImg"      => bgImg
-    case "theme"      => theme.some
-    case "pieceSet"   => pieceSet.some
-    case "theme3d"    => theme3d.some
+    case "bg" => transp.fold("transp", dark.fold("dark", "light")).some
+    case "bgImg" => bgImg
+    case "theme" => theme.some
+    case "pieceSet" => pieceSet.some
+    case "theme3d" => theme3d.some
     case "pieceSet3d" => pieceSet3d.some
-    case "is3d"       => is3d.toString.some
-    case "soundSet"   => soundSet.some
-    case _            => none
+    case "is3d" => is3d.toString.some
+    case "soundSet" => soundSet.some
+    case _ => none
   }
   def set(name: String, value: String): Option[Pref] = name match {
     case "bg" =>
       if (value == "transp") copy(dark = true, transp = true).some
-      else Pref.bgs get value map { b => copy(dark = b, transp = false) }
-    case "bgImg"      => copy(bgImg = value.some).some
-    case "theme"      => Theme.allByName get value map { t => copy(theme = t.name) }
-    case "pieceSet"   => PieceSet.allByName get value map { p => copy(pieceSet = p.name) }
-    case "theme3d"    => Theme3d.allByName get value map { t => copy(theme3d = t.name) }
-    case "pieceSet3d" => PieceSet3d.allByName get value map { p => copy(pieceSet3d = p.name) }
-    case "is3d"       => copy(is3d = value == "true").some
-    case "soundSet"   => SoundSet.allByKey get value map { s => copy(soundSet = s.name) }
-    case _            => none
+      else
+        Pref.bgs.get(value).map { b =>
+          copy(dark = b, transp = false)
+        }
+    case "bgImg" => copy(bgImg = value.some).some
+    case "theme" =>
+      Theme.allByName.get(value).map { t =>
+        copy(theme = t.name)
+      }
+    case "pieceSet" =>
+      PieceSet.allByName.get(value).map { p =>
+        copy(pieceSet = p.name)
+      }
+    case "theme3d" =>
+      Theme3d.allByName.get(value).map { t =>
+        copy(theme3d = t.name)
+      }
+    case "pieceSet3d" =>
+      PieceSet3d.allByName.get(value).map { p =>
+        copy(pieceSet3d = p.name)
+      }
+    case "is3d" => copy(is3d = value == "true").some
+    case "soundSet" =>
+      SoundSet.allByKey.get(value).map { s =>
+        copy(soundSet = s.name)
+      }
+    case _ => none
   }
 
   def animationFactor = animation match {
-    case Animation.NONE   => 0
-    case Animation.FAST   => 0.5f
+    case Animation.NONE => 0
+    case Animation.FAST => 0.5f
     case Animation.NORMAL => 1
-    case Animation.SLOW   => 2
-    case _                => 1
+    case Animation.SLOW => 2
+    case _ => 1
   }
 
   def isBlindfold = blindfold == Pref.Blindfold.YES
@@ -103,10 +121,7 @@ object Pref {
     val NORMAL = 2
     val HARD = 3
 
-    val choices = Seq(
-      EASY -> "Easy",
-      NORMAL -> "Normal",
-      HARD -> "Hard")
+    val choices = Seq(EASY -> "Easy", NORMAL -> "Normal", HARD -> "Hard")
   }
 
   object Color {
@@ -114,10 +129,7 @@ object Pref {
     val RANDOM = 2
     val BLACK = 3
 
-    val choices = Seq(
-      WHITE -> "White",
-      RANDOM -> "Random",
-      BLACK -> "Black")
+    val choices = Seq(WHITE -> "White", RANDOM -> "Random", BLACK -> "Black")
   }
 
   object AutoQueen {
@@ -125,10 +137,7 @@ object Pref {
     val PREMOVE = 2
     val ALWAYS = 3
 
-    val choices = Seq(
-      NEVER -> "Never",
-      ALWAYS -> "Always",
-      PREMOVE -> "When premoving")
+    val choices = Seq(NEVER -> "Never", ALWAYS -> "Always", PREMOVE -> "When premoving")
   }
 
   object SubmitMove {
@@ -148,9 +157,7 @@ object Pref {
     val NO = 0
     val YES = 1
 
-    val choices = Seq(
-      NO -> "No",
-      YES -> "Yes")
+    val choices = Seq(NO -> "No", YES -> "Yes")
   }
 
   object InsightShare {
@@ -158,19 +165,15 @@ object Pref {
     val FRIENDS = 1
     val EVERYBODY = 2
 
-    val choices = Seq(
-      NOBODY -> "With nobody",
-      FRIENDS -> "With friends",
-      EVERYBODY -> "With everybody")
+    val choices =
+      Seq(NOBODY -> "With nobody", FRIENDS -> "With friends", EVERYBODY -> "With everybody")
   }
 
   object Blindfold {
     val NO = 0
     val YES = 1
 
-    val choices = Seq(
-      NO -> "What? No!",
-      YES -> "Yes, hide the pieces")
+    val choices = Seq(NO -> "What? No!", YES -> "Yes, hide the pieces")
   }
 
   object AutoThreefold {
@@ -178,10 +181,8 @@ object Pref {
     val TIME = 2
     val ALWAYS = 3
 
-    val choices = Seq(
-      NEVER -> "Never",
-      ALWAYS -> "Always",
-      TIME -> "When time remaining < 30 seconds")
+    val choices =
+      Seq(NEVER -> "Never", ALWAYS -> "Always", TIME -> "When time remaining < 30 seconds")
   }
 
   object Takeback {
@@ -189,10 +190,7 @@ object Pref {
     val CASUAL = 2
     val ALWAYS = 3
 
-    val choices = Seq(
-      NEVER -> "Never",
-      ALWAYS -> "Always",
-      CASUAL -> "In casual games only")
+    val choices = Seq(NEVER -> "Never", ALWAYS -> "Always", CASUAL -> "In casual games only")
   }
 
   object Animation {
@@ -201,11 +199,7 @@ object Pref {
     val NORMAL = 2
     val SLOW = 3
 
-    val choices = Seq(
-      NONE -> "None",
-      FAST -> "Fast",
-      NORMAL -> "Normal",
-      SLOW -> "Slow")
+    val choices = Seq(NONE -> "None", FAST -> "Fast", NORMAL -> "Normal", SLOW -> "Slow")
   }
 
   object Coords {
@@ -213,10 +207,7 @@ object Pref {
     val INSIDE = 1
     val OUTSIDE = 2
 
-    val choices = Seq(
-      NONE -> "No",
-      INSIDE -> "Inside the board",
-      OUTSIDE -> "Outside the board")
+    val choices = Seq(NONE -> "No", INSIDE -> "Inside the board", OUTSIDE -> "Outside the board")
   }
 
   object Replay {
@@ -224,10 +215,7 @@ object Pref {
     val SLOW = 1
     val ALWAYS = 2
 
-    val choices = Seq(
-      NEVER -> "Never",
-      SLOW -> "On slow games",
-      ALWAYS -> "Always")
+    val choices = Seq(NEVER -> "Never", SLOW -> "On slow games", ALWAYS -> "Always")
   }
 
   object ClockTenths {
@@ -235,10 +223,8 @@ object Pref {
     val LOWTIME = 1
     val ALWAYS = 2
 
-    val choices = Seq(
-      NEVER -> "Never",
-      LOWTIME -> "When time remaining < 10 seconds",
-      ALWAYS -> "Always")
+    val choices =
+      Seq(NEVER -> "Never", LOWTIME -> "When time remaining < 10 seconds", ALWAYS -> "Always")
   }
 
   object Challenge {
@@ -255,14 +241,19 @@ object Pref {
       FRIEND -> "Only friends",
       ALWAYS -> "Always")
 
-    def block(from: User, to: User, pref: Int, follow: Boolean, fromCheat: Boolean): Option[String] = pref match {
+    def block(
+        from: User,
+        to: User,
+        pref: Int,
+        follow: Boolean,
+        fromCheat: Boolean): Option[String] = pref match {
       case NEVER => "{{user}} doesn't accept challenges.".some
       case _ if fromCheat && !follow => "{{user}} only accepts challenges from friends.".some
       case RATING if from.perfs.bestRating > to.perfs.bestRating => none
       case RATING if math.abs(from.perfs.bestRating - to.perfs.bestRating) > ratingThreshold =>
         s"{{user}} only accepts challenges if rating is ± $ratingThreshold.".some
       case FRIEND if !follow => "{{user}} only accepts challenges from friends.".some
-      case _                 => none
+      case _ => none
     }
   }
 
@@ -271,10 +262,7 @@ object Pref {
     val FRIEND = 2
     val ALWAYS = 3
 
-    val choices = Seq(
-      NEVER -> "Never",
-      FRIEND -> "Only friends",
-      ALWAYS -> "Always")
+    val choices = Seq(NEVER -> "Never", FRIEND -> "Only friends", ALWAYS -> "Always")
   }
 
   def create(id: String) = default.copy(_id = id)
@@ -312,7 +300,8 @@ object Pref {
     submitMove = SubmitMove.CORRESPONDENCE_ONLY,
     confirmResign = ConfirmResign.YES,
     insightShare = InsightShare.FRIENDS,
-    tags = Map.empty)
+    tags = Map.empty
+  )
 
   import ornicar.scalalib.Zero
   implicit def PrefZero: Zero[Pref] = Zero.instance(default)

@@ -17,10 +17,10 @@ trait FormHelper { self: I18nHelper =>
   def errMsg(form: Form[_])(implicit ctx: Context): Html = errMsg(form.errors)
 
   def errMsg(errors: Seq[FormError])(implicit ctx: Context): Html = Html {
-    errors map { e =>
+    errors.map { e =>
       val msg = transKey(e.message, e.args) match {
         case m if m == e.message => errNames.get(e.message).fold(e.message)(_.str())
-        case m                   => m
+        case m => m
       }
       s"""<p class="error">$msg</p>"""
     } mkString

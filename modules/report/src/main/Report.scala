@@ -27,7 +27,7 @@ case class Report(
   def unprocessedOther = unprocessed && isOther
   def unprocessedTrollOrInsult = unprocessed && isTrollOrInsult
 
-  def isCommunication = Reason.communication contains realReason
+  def isCommunication = Reason.communication.contains(realReason)
 
   def isAutomatic = createdBy == "lichess"
   def isManual = !isAutomatic
@@ -36,23 +36,20 @@ case class Report(
 
   def unprocessed = processedBy.isEmpty
 
-  lazy val realReason: Reason = Reason byName reason
+  lazy val realReason: Reason = Reason.byName(reason)
 }
 
 object Report {
 
   case class WithUser(report: Report, user: User)
 
-  def make(
-    user: User,
-    reason: Reason,
-    text: String,
-    createdBy: User): Report = new Report(
-    _id = Random nextStringUppercase 8,
-    user = user.id,
-    reason = reason.name,
-    text = text,
-    processedBy = none,
-    createdAt = DateTime.now,
-    createdBy = createdBy.id)
+  def make(user: User, reason: Reason, text: String, createdBy: User): Report =
+    new Report(
+      _id = Random.nextStringUppercase(8),
+      user = user.id,
+      reason = reason.name,
+      text = text,
+      processedBy = none,
+      createdAt = DateTime.now,
+      createdBy = createdBy.id)
 }

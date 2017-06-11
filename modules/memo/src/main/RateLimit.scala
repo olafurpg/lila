@@ -4,8 +4,8 @@ import ornicar.scalalib.Zero
 import scala.concurrent.duration.Duration
 
 /**
- * side effect throttler that allows X ops per Y unit of time
- */
+  * side effect throttler that allows X ops per Y unit of time
+  */
 final class RateLimit(nb: Int, duration: Duration, name: String) {
 
   private type NbOps = Int
@@ -20,7 +20,7 @@ final class RateLimit(nb: Int, duration: Duration, name: String) {
   logger.info(s"[start] $name ($nb/$duration)")
 
   def apply[A](key: String, msg: => String = "")(op: => A)(implicit default: Zero[A]): A =
-    Option(storage getIfPresent key) match {
+    Option(storage.getIfPresent(key)) match {
       case None =>
         storage.put(key, 1 -> makeClearAt)
         op

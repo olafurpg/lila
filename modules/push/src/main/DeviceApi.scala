@@ -17,19 +17,28 @@ private final class DeviceApi(coll: Coll) {
     coll.find($doc("userId" -> userId)).cursor[Device]().gather[List]()
 
   private[push] def findLastByUserId(platform: String)(userId: String): Fu[Option[Device]] =
-    coll.find($doc(
-      "platform" -> platform,
-      "userId" -> userId
-    )).sort($doc("seenAt" -> -1)).uno[Device]
+    coll
+      .find(
+        $doc(
+          "platform" -> platform,
+          "userId" -> userId
+        ))
+      .sort($doc("seenAt" -> -1))
+      .uno[Device]
 
   def register(user: User, platform: String, deviceId: String) = {
     lila.mon.push.register.in(platform)()
-    coll.update($id(deviceId), Device(
-      _id = deviceId,
-      platform = platform,
-      userId = user.id,
-      seenAt = DateTime.now
-    ), upsert = true).void
+    coll
+      .update(
+        $id(deviceId),
+        Device(
+          _id = deviceId,
+          platform = platform,
+          userId = user.id,
+          seenAt = DateTime.now
+        ),
+        upsert = true)
+      .void
   }
 
   def unregister(user: User) = {

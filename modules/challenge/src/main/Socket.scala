@@ -6,23 +6,25 @@ import play.api.libs.json._
 import scala.concurrent.duration.Duration
 
 import lila.hub.TimeBomb
-import lila.socket.actorApi.{ Connected => _, _ }
-import lila.socket.{ SocketActor, History, Historical }
+import lila.socket.actorApi.{Connected => _, _}
+import lila.socket.{SocketActor, History, Historical}
 
 private final class Socket(
     challengeId: String,
     val history: History[Unit],
     getChallenge: Challenge.ID => Fu[Option[Challenge]],
     uidTimeout: Duration,
-    socketTimeout: Duration) extends SocketActor[Socket.Member](uidTimeout) with Historical[Socket.Member, Unit] {
+    socketTimeout: Duration)
+    extends SocketActor[Socket.Member](uidTimeout)
+    with Historical[Socket.Member, Unit] {
 
   private val timeBomb = new TimeBomb(socketTimeout)
 
   def receiveSpecific = {
 
     case Socket.Reload =>
-      getChallenge(challengeId) foreach {
-        _ foreach { challenge =>
+      getChallenge(challengeId).foreach {
+        _.foreach { challenge =>
           notifyVersion("reload", JsNull, ())
         }
       }
@@ -31,7 +33,7 @@ private final class Socket(
       ping(uid)
       timeBomb.delay
       withMember(uid) { m =>
-        history.since(v).fold(resync(m))(_ foreach sendMessage(m))
+        history.since(v).fold(resync(m))(_.foreach(sendMessage(m)))
       }
     }
 
@@ -56,10 +58,8 @@ private final class Socket(
 
 private object Socket {
 
-  case class Member(
-      channel: JsChannel,
-      userId: Option[String],
-      owner: Boolean) extends lila.socket.SocketMember {
+  case class Member(channel: JsChannel, userId: Option[String], owner: Boolean)
+      extends lila.socket.SocketMember {
     val troll = false
   }
 

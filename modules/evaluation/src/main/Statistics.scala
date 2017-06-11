@@ -1,6 +1,6 @@
 package lila.evaluation
 
-import Math.{ pow, abs, sqrt, E, exp }
+import Math.{pow, abs, sqrt, E, exp}
 import scalaz.NonEmptyList
 
 object Statistics {
@@ -18,7 +18,7 @@ object Statistics {
   def average[T](a: NonEmptyList[T])(implicit n: Numeric[T]): Double = {
     @tailrec def average(a: List[T], sum: T, depth: Int): Double = {
       a match {
-        case Nil     => n.toDouble(sum) / depth
+        case Nil => n.toDouble(sum) / depth
         case x :: xs => average(xs, n.plus(sum, x), depth + 1)
       }
     }
@@ -31,7 +31,7 @@ object Statistics {
   // ups all values by 5 (0.5s)
   // as to avoid very high variation on bullet games
   // where all move times are low (http://en.lichess.org/@/AlisaP?mod)
-  def moveTimeCoefVariation(a: NonEmptyList[Int]): Double = coefVariation(a.map(5+))
+  def moveTimeCoefVariation(a: NonEmptyList[Int]): Double = coefVariation(a.map(5 +))
 
   def moveTimeCoefVariation(pov: lila.game.Pov): Option[Double] =
     pov.game.moveTimes(pov.color).toNel.map(moveTimeCoefVariation)
@@ -39,7 +39,7 @@ object Statistics {
   def consistentMoveTimes(pov: lila.game.Pov): Boolean =
     moveTimeCoefVariation(pov) ?? (_ < 0.4)
 
-  def noFastMoves(pov: lila.game.Pov): Boolean = pov.game.moveTimes(pov.color).count(2>) <= 2
+  def noFastMoves(pov: lila.game.Pov): Boolean = pov.game.moveTimes(pov.color).count(2 >) <= 2
 
   def intervalToVariance4(interval: Double): Double = pow(interval / 3, 8) // roughly speaking
 
@@ -52,15 +52,15 @@ object Statistics {
     1 - cdf(n.abs(x), avg, sd) + cdf(n.times(n.fromInt(-1), n.abs(x)), avg, sd)
 
   def listAverage[T](x: List[T])(implicit n: Numeric[T]): Double = x match {
-    case Nil      => 0
+    case Nil => 0
     case a :: Nil => n.toDouble(a)
-    case a :: b   => average(NonEmptyList.nel(a, b))
+    case a :: b => average(NonEmptyList.nel(a, b))
   }
 
   def listDeviation[T](x: List[T])(implicit n: Numeric[T]): Double = x match {
-    case Nil      => 0
+    case Nil => 0
     case _ :: Nil => 0
-    case a :: b   => deviation(NonEmptyList.nel(a, b))
+    case a :: b => deviation(NonEmptyList.nel(a, b))
   }
 }
 

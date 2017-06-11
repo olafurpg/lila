@@ -9,25 +9,27 @@ import akka.actor._
 final class Sequencer(
     receiveTimeout: Option[FiniteDuration],
     executionTimeout: Option[FiniteDuration] = None,
-    logger: lila.log.Logger) extends Actor {
+    logger: lila.log.Logger)
+    extends Actor {
 
   receiveTimeout.foreach(context.setReceiveTimeout)
 
   private def idle: Receive = {
 
     case msg =>
-      context become busy
+      context.become(busy)
       processThenDone(msg)
   }
 
   private def busy: Receive = {
 
-    case Done => dequeue match {
-      case None       => context become idle
-      case Some(work) => processThenDone(work)
-    }
+    case Done =>
+      dequeue match {
+        case None => context.become(idle)
+        case Some(work) => processThenDone(work)
+      }
 
-    case msg => queue enqueue msg
+    case msg => queue.enqueue(msg)
   }
 
   def receive = idle
@@ -41,15 +43,18 @@ final class Sequencer(
     work match {
       case ReceiveTimeout => self ! PoisonPill
       case Sequencer.Work(run, promiseOption, timeoutOption) =>
-        val future = timeoutOption.orElse(executionTimeout).fold(run()) { timeout =>
-          run().withTimeout(
-            duration = timeout,
-            error = lila.common.LilaException(s"Sequencer timed out after $timeout")
-          )(context.system)
-        } andThenAnyway {
-          self ! Done
-        }
-        promiseOption foreach (_ completeWith future)
+        val future = timeoutOption
+          .orElse(executionTimeout)
+          .fold(run()) { timeout =>
+            run().withTimeout(
+              duration = timeout,
+              error = lila.common.LilaException(s"Sequencer timed out after $timeout")
+            )(context.system)
+          }
+          .andThenAnyway {
+            self ! Done
+          }
+        promiseOption.foreach(_.completeWith(future))
       case x => logger.branch("Sequencer").warn(s"Unsupported message $x")
     }
   }
@@ -58,12 +63,12 @@ final class Sequencer(
 object Sequencer {
 
   case class Work(
-    run: () => Funit,
-    promise: Option[Promise[Unit]] = None,
-    timeout: Option[FiniteDuration] = None)
+      run: () => Funit,
+      promise: Option[Promise[Unit]] = None,
+      timeout: Option[FiniteDuration] = None)
 
   def work(
-    run: => Funit,
-    promise: Option[Promise[Unit]] = None,
-    timeout: Option[FiniteDuration] = None): Work = Work(() => run, promise, timeout)
+      run: => Funit,
+      promise: Option[Promise[Unit]] = None,
+      timeout: Option[FiniteDuration] = None): Work = Work(() => run, promise, timeout)
 }

@@ -1,8 +1,8 @@
 package lila.app
 package templating
 
-import lila.user.{ User, UserContext }
-import lila.security.{ Permission, Granter }
+import lila.user.{User, UserContext}
+import lila.security.{Permission, Granter}
 
 trait SecurityHelper {
 

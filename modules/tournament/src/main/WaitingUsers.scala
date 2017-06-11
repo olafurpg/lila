@@ -13,7 +13,7 @@ private[tournament] case class WaitingUsers(
   // 10+0 -> 46 -> 35
   private val waitSeconds = {
     (clock.fold(60)(_.estimateTotalTime) / 15) + 6
-  } min 35 max 12
+  }.min(35).max(12)
 
   lazy val all = hash.keys.toList
   lazy val size = hash.size
@@ -26,12 +26,12 @@ private[tournament] case class WaitingUsers(
     else all
   }
 
-  def waitSecondsOf(userId: String) = hash get userId map { d =>
+  def waitSecondsOf(userId: String) = hash.get(userId).map { d =>
     nowSeconds - d.getSeconds
   }
 
   def waiting = {
-    val since = date minusSeconds waitSeconds
+    val since = date.minusSeconds(waitSeconds)
     hash.collect {
       case (u, d) if d.isBefore(since) => u
     }.toList
@@ -47,9 +47,12 @@ private[tournament] case class WaitingUsers(
     )
   }
 
-  def intersect(us: Seq[String]) = copy(hash = hash filterKeys us.contains)
+  def intersect(us: Seq[String]) = copy(hash = hash.filterKeys(us.contains))
 
-  def diff(us: Set[String]) = copy(hash = hash filterKeys { k => !us.contains(k) })
+  def diff(us: Set[String]) =
+    copy(hash = hash.filterKeys { k =>
+      !us.contains(k)
+    })
 
   override def toString = all.toString
 }

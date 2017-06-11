@@ -10,7 +10,7 @@ import lila.rating.PerfType
 final class PerfStatStorage(coll: Coll) {
 
   implicit val PerfTypeBSONHandler = new BSONHandler[BSONInteger, PerfType] {
-    def read(b: BSONInteger) = PerfType.byId get b.value err s"Invalid perf type id ${b.value}"
+    def read(b: BSONInteger) = PerfType.byId.get(b.value).err(s"Invalid perf type id ${b.value}")
     def write(p: PerfType) = BSONInteger(p.id)
   }
   implicit val UserIdBSONHandler = new BSONHandler[BSONString, UserId] {

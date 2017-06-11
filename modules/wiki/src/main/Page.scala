@@ -3,13 +3,7 @@ package lila.wiki
 import java.text.Normalizer
 import java.util.regex.Matcher.quoteReplacement
 
-case class Page(
-  id: String,
-  slug: String,
-  number: Int,
-  lang: String,
-  title: String,
-  body: String) {
+case class Page(id: String, slug: String, number: Int, lang: String, title: String, body: String) {
 
   def isDefaultLang = lang == Page.DefaultLang
 }
@@ -22,7 +16,7 @@ object Page {
   // name = en_1_Some Title
   def make(name: String, body: String): Option[Page] = name match {
     case NameRegex(lang, numberStr, title) =>
-      parseIntOption(numberStr) map { number =>
+      parseIntOption(numberStr).map { number =>
         Page(
           id = name,
           number = number,
@@ -42,7 +36,7 @@ object Page {
   }
 
   private def dropNumber(input: String) =
-    """^\d+_(.+)$""".r.replaceAllIn(input, m => quoteReplacement(m group 1))
+    """^\d+_(.+)$""".r.replaceAllIn(input, m => quoteReplacement(m.group(1)))
 
   import lila.db.dsl.BSONJodaDateTimeHandler
   implicit val PageBSONHandler = reactivemongo.bson.Macros.handler[Page]

@@ -12,7 +12,9 @@ private[setup] final class FormFactory(casualOnly: Boolean) {
   import Mappings._
 
   def filterFilled(implicit ctx: UserContext): Fu[(Form[FilterConfig], FilterConfig)] =
-    filterConfig map { f => filter(ctx).fill(f) -> f }
+    filterConfig.map { f =>
+      filter(ctx).fill(f) -> f
+    }
 
   def filter(ctx: UserContext) = Form(
     mapping(
@@ -23,13 +25,13 @@ private[setup] final class FormFactory(casualOnly: Boolean) {
     )(FilterConfig.<<)(_.>>)
   )
 
-  def filterConfig(implicit ctx: UserContext): Fu[FilterConfig] = savedConfig map (_.filter)
+  def filterConfig(implicit ctx: UserContext): Fu[FilterConfig] = savedConfig.map(_.filter)
 
   def aiFilled(fen: Option[String])(implicit ctx: UserContext): Fu[Form[AiConfig]] =
-    aiConfig map { config =>
-      ai(ctx) fill fen.fold(config) { f =>
+    aiConfig.map { config =>
+      ai(ctx).fill(fen.fold(config) { f =>
         config.copy(fen = f.some, variant = chess.variant.FromPosition)
-      }
+      })
     }
 
   def ai(ctx: UserContext) = Form(
@@ -46,13 +48,13 @@ private[setup] final class FormFactory(casualOnly: Boolean) {
       .verifying("Invalid FEN", _.validFen)
   )
 
-  def aiConfig(implicit ctx: UserContext): Fu[AiConfig] = savedConfig map (_.ai)
+  def aiConfig(implicit ctx: UserContext): Fu[AiConfig] = savedConfig.map(_.ai)
 
   def friendFilled(fen: Option[String])(implicit ctx: UserContext): Fu[Form[FriendConfig]] =
-    friendConfig map { config =>
-      friend(ctx) fill fen.fold(config) { f =>
+    friendConfig.map { config =>
+      friend(ctx).fill(fen.fold(config) { f =>
         config.copy(fen = f.some, variant = chess.variant.FromPosition)
-      }
+      })
     }
 
   def friend(ctx: UserContext) = Form(
@@ -70,10 +72,10 @@ private[setup] final class FormFactory(casualOnly: Boolean) {
       .verifying("Invalid FEN", _.validFen)
   )
 
-  def friendConfig(implicit ctx: UserContext): Fu[FriendConfig] = savedConfig map (_.friend)
+  def friendConfig(implicit ctx: UserContext): Fu[FriendConfig] = savedConfig.map(_.friend)
 
   def hookFilled(timeModeString: Option[String])(implicit ctx: UserContext): Fu[Form[HookConfig]] =
-    hookConfig map (_ withTimeModeString timeModeString) map hook(ctx).fill
+    hookConfig.map(_.withTimeModeString(timeModeString)).map(hook(ctx).fill)
 
   def hook(ctx: UserContext) = Form(
     mapping(
@@ -85,14 +87,14 @@ private[setup] final class FormFactory(casualOnly: Boolean) {
       "mode" -> mode(ctx.isAuth && !casualOnly),
       "membersOnly" -> boolean,
       "ratingRange" -> optional(ratingRange),
-      "color" -> nonEmptyText.verifying(Color.names contains _)
+      "color" -> nonEmptyText.verifying(Color.names.contains(_))
     )(HookConfig.<<)(_.>>)
       .verifying("Invalid clock", _.validClock)
       .verifying("Can't create rated unlimited in lobby", _.noRatedUnlimited)
   )
 
-  def hookConfig(implicit ctx: UserContext): Fu[HookConfig] = savedConfig map (_.hook)
+  def hookConfig(implicit ctx: UserContext): Fu[HookConfig] = savedConfig.map(_.hook)
 
   def savedConfig(implicit ctx: UserContext): Fu[UserConfig] =
-    ctx.me.fold(AnonConfigRepo config ctx.req)(UserConfigRepo.config)
+    ctx.me.fold(AnonConfigRepo.config(ctx.req))(UserConfigRepo.config)
 }

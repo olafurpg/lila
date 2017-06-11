@@ -18,10 +18,10 @@ final class Env(
     scheduler: lila.common.Scheduler,
     isProd: Boolean) {
 
-  private val FeaturedSelect = config duration "featured.select"
-  private val StreamingSearch = config duration "streaming.search"
-  private val GoogleApiKey = config getString "streaming.google.api_key"
-  private val Keyword = config getString "streaming.keyword"
+  private val FeaturedSelect = config.duration("featured.select")
+  private val StreamingSearch = config.duration("streaming.search")
+  private val GoogleApiKey = config.getString("streaming.google.api_key")
+  private val Keyword = config.getString("streaming.keyword")
 
   lazy val tv = new Tv(tvActor)
 
@@ -40,7 +40,7 @@ final class Env(
   lazy val streamerList = new StreamerList(new {
     import reactivemongo.bson._
     private val coll = db("flag")
-    def get = coll.primitiveOne[String]($id("streamer"), "text") map (~_)
+    def get = coll.primitiveOne[String]($id("streamer"), "text").map(~_)
     def set(text: String) =
       coll.update($id("streamer"), $doc("text" -> text), upsert = true).void
   })
@@ -51,13 +51,12 @@ final class Env(
       timeToLive = 10 seconds,
       default = Set.empty,
       logger = logger)
-    def apply(id: String) = cache get true contains id
+    def apply(id: String) = cache.get(true).contains(id)
   }
 
   object streamsOnAir {
-    private val cache = lila.memo.AsyncCache.single[List[StreamOnAir]](
-      f = streaming.onAir,
-      timeToLive = 2 seconds)
+    private val cache =
+      lila.memo.AsyncCache.single[List[StreamOnAir]](f = streaming.onAir, timeToLive = 2 seconds)
     def all = cache(true)
   }
 
@@ -79,13 +78,14 @@ final class Env(
 
 object Env {
 
-  lazy val current = "tv" boot new Env(
-    config = lila.common.PlayApp loadConfig "tv",
-    db = lila.db.Env.current,
-    hub = lila.hub.Env.current,
-    lightUser = lila.user.Env.current.lightUser,
-    system = lila.common.PlayApp.system,
-    scheduler = lila.common.PlayApp.scheduler,
-    isProd = lila.common.PlayApp.isProd)
+  lazy val current = "tv".boot(
+    new Env(
+      config = lila.common.PlayApp.loadConfig("tv"),
+      db = lila.db.Env.current,
+      hub = lila.hub.Env.current,
+      lightUser = lila.user.Env.current.lightUser,
+      system = lila.common.PlayApp.system,
+      scheduler = lila.common.PlayApp.scheduler,
+      isProd = lila.common.PlayApp.isProd
+    ))
 }
-

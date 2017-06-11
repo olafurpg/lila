@@ -4,27 +4,27 @@ package paginator
 trait AdapterLike[A] {
 
   /**
-   * Returns the total number of results.
-   */
+    * Returns the total number of results.
+    */
   def nbResults: Fu[Int]
 
   /**
-   * Returns a slice of the results.
-   *
-   * @param   offset    The number of elements to skip, starting from zero
-   * @param   length    The maximum number of elements to return
-   */
+    * Returns a slice of the results.
+    *
+    * @param   offset    The number of elements to skip, starting from zero
+    * @param   length    The maximum number of elements to return
+    */
   def slice(offset: Int, length: Int): Fu[Seq[A]]
 
   /**
-   * FUNCTOR INTERFACE
-   */
+    * FUNCTOR INTERFACE
+    */
   def map[B](f: A => B): AdapterLike[B] = new AdapterLike[B] {
 
     def nbResults = AdapterLike.this.nbResults
 
     def slice(offset: Int, length: Int) =
-      AdapterLike.this.slice(offset, length) map { _ map f }
+      AdapterLike.this.slice(offset, length).map { _.map(f) }
   }
 
   def mapFuture[B](f: A => Fu[B]): AdapterLike[B] = new AdapterLike[B] {
@@ -32,7 +32,7 @@ trait AdapterLike[A] {
     def nbResults = AdapterLike.this.nbResults
 
     def slice(offset: Int, length: Int) =
-      AdapterLike.this.slice(offset, length) flatMap { results =>
+      AdapterLike.this.slice(offset, length).flatMap { results =>
         results.map(f).sequenceFu
       }
   }
@@ -42,6 +42,6 @@ trait AdapterLike[A] {
     def nbResults = AdapterLike.this.nbResults
 
     def slice(offset: Int, length: Int) =
-      AdapterLike.this.slice(offset, length) flatMap f
+      AdapterLike.this.slice(offset, length).flatMap(f)
   }
 }

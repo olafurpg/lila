@@ -9,7 +9,7 @@ case class Captcha(
     solutions: Captcha.Solutions,
     moves: Map[String, String]) {
 
-  def valid(solution: String) = solutions.list contains solution
+  def valid(solution: String) = solutions.list.contains(solution)
 }
 
 object Captcha {

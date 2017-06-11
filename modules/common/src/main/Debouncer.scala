@@ -16,7 +16,7 @@ final class Debouncer[A: Manifest](length: FiniteDuration, function: A => Unit) 
     case a: A =>
       function(a)
       context.system.scheduler.scheduleOnce(length, self, DelayEnd)
-      context become delay
+      context.become(delay)
   }
 
   def delay: Receive = {
@@ -24,8 +24,8 @@ final class Debouncer[A: Manifest](length: FiniteDuration, function: A => Unit) 
     case a: A => delayed = a.some
 
     case DelayEnd =>
-      context become ready
-      delayed foreach { a =>
+      context.become(ready)
+      delayed.foreach { a =>
         self ! a
         delayed = none
       }

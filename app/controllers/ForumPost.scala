@@ -13,7 +13,7 @@ object ForumPost extends LilaController with ForumController {
     NotForKids {
       text.trim.isEmpty.fold(
         Redirect(routes.ForumCateg.index).fuccess,
-        Env.forumSearch(text, page, isGranted(_.StaffForum), ctx.troll) map { paginator =>
+        Env.forumSearch(text, page, isGranted(_.StaffForum), ctx.troll).map { paginator =>
           html.forum.search(text, paginator)
         }
       )
@@ -22,7 +22,7 @@ object ForumPost extends LilaController with ForumController {
 
   def recent = Open { implicit ctx =>
     NotForKids {
-      Env.forum.recent(ctx.me, teamCache.teamIds) map { posts =>
+      Env.forum.recent(ctx.me, teamCache.teamIds).map { posts =>
         html.forum.post.recent(posts)
       }
     }
@@ -35,26 +35,29 @@ object ForumPost extends LilaController with ForumController {
         OptionFuResult(topicApi.show(categSlug, slug, page, ctx.troll)) {
           case (categ, topic, posts) =>
             if (topic.closed) fuccess(BadRequest("This topic is closed"))
-            else forms.post.bindFromRequest.fold(
-              err => forms.anyCaptcha flatMap { captcha =>
-                ctx.userId ?? Env.timeline.status(s"forum:${topic.id}") map { unsub =>
-                  BadRequest(html.forum.topic.show(categ, topic, posts, Some(err -> captcha), unsub))
+            else
+              forms.post.bindFromRequest.fold(
+                err =>
+                  forms.anyCaptcha.flatMap { captcha =>
+                    (ctx.userId ?? Env.timeline.status(s"forum:${topic.id}")).map { unsub =>
+                      BadRequest(
+                        html.forum.topic.show(categ, topic, posts, Some(err -> captcha), unsub))
+                    }
+                },
+                data =>
+                  postApi.makePost(categ, topic, data).map { post =>
+                    Redirect(routes.ForumPost.redirect(post.id))
                 }
-              },
-              data => postApi.makePost(categ, topic, data) map { post =>
-                Redirect(routes.ForumPost.redirect(post.id))
-              }
-            )
+              )
         }
       }
     }
   }
 
-  def delete(categSlug: String, id: String) = Auth { implicit ctx =>
-    me =>
-      CategGrantMod(categSlug) {
-        postApi.delete(categSlug, id, me) map { Ok(_) }
-      }
+  def delete(categSlug: String, id: String) = Auth { implicit ctx => me =>
+    CategGrantMod(categSlug) {
+      postApi.delete(categSlug, id, me).map { Ok(_) }
+    }
   }
 
   def redirect(id: String) = Open { implicit ctx =>

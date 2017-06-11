@@ -10,11 +10,11 @@ final class Env(
     system: ActorSystem,
     appPath: String) {
 
-  val CliUsername = config getString "cli.username"
+  val CliUsername = config.getString("cli.username")
 
-  private val RendererName = config getString "app.renderer.name"
-  private val RouterName = config getString "app.router.name"
-  private val WebPath = config getString "app.web_path"
+  private val RendererName = config.getString("app.renderer.name")
+  private val RouterName = config.getString("app.router.name")
+  private val WebPath = config.getString("app.web_path")
 
   lazy val bus = lila.common.Bus(system)
 
@@ -29,7 +29,8 @@ final class Env(
     donationProgress = () => Env.donation.api.progress,
     lobbyApi = Env.api.lobbyApi,
     getPlayban = Env.playban.api.currentBan _,
-    lightUser = Env.user.lightUser)
+    lightUser = Env.user.lightUser
+  )
 
   lazy val userInfo = mashup.UserInfo(
     countUsers = () => Env.user.countEnabled,
@@ -45,50 +46,56 @@ final class Env(
     isHostingSimul = Env.simul.isHosting,
     isStreamer = Env.tv.isStreamer.apply,
     insightShare = Env.insight.share,
-    getPlayTime = Env.game.playTime.apply) _
+    getPlayTime = Env.game.playTime.apply
+  ) _
 
   system.actorOf(Props(new actor.Renderer), name = RendererName)
 
-  system.actorOf(Props(new actor.Router(
-    baseUrl = Env.api.Net.BaseUrl,
-    protocol = Env.api.Net.Protocol,
-    domain = Env.api.Net.Domain
-  )), name = RouterName)
+  system.actorOf(
+    Props(
+      new actor.Router(
+        baseUrl = Env.api.Net.BaseUrl,
+        protocol = Env.api.Net.Protocol,
+        domain = Env.api.Net.Domain
+      )),
+    name = RouterName)
 
   lila.log.boot.info("Preloading modules")
-  lila.common.Chronometer.syncEffect(List(Env.socket,
-    Env.site,
-    Env.tournament,
-    Env.lobby,
-    Env.game,
-    Env.setup,
-    Env.round,
-    Env.team,
-    Env.message,
-    Env.timeline,
-    Env.gameSearch,
-    Env.teamSearch,
-    Env.forumSearch,
-    Env.relation,
-    Env.report,
-    Env.notification,
-    Env.bookmark,
-    Env.pref,
-    Env.chat,
-    Env.puzzle,
-    Env.tv,
-    Env.blog,
-    Env.video,
-    Env.shutup, // required to load the actor
-    Env.insight, // required to load the actor
-    Env.worldMap, // required to load the actor
-    Env.push, // required to load the actor
-    Env.perfStat, // required to load the actor
-    Env.slack, // required to load the actor
-    Env.challenge, // required to load the actor
-    Env.explorer, // required to load the actor
-    Env.fishnet // required to schedule the cleaner
-  )) { lap =>
+  lila.common.Chronometer.syncEffect(
+    List(
+      Env.socket,
+      Env.site,
+      Env.tournament,
+      Env.lobby,
+      Env.game,
+      Env.setup,
+      Env.round,
+      Env.team,
+      Env.message,
+      Env.timeline,
+      Env.gameSearch,
+      Env.teamSearch,
+      Env.forumSearch,
+      Env.relation,
+      Env.report,
+      Env.notification,
+      Env.bookmark,
+      Env.pref,
+      Env.chat,
+      Env.puzzle,
+      Env.tv,
+      Env.blog,
+      Env.video,
+      Env.shutup, // required to load the actor
+      Env.insight, // required to load the actor
+      Env.worldMap, // required to load the actor
+      Env.push, // required to load the actor
+      Env.perfStat, // required to load the actor
+      Env.slack, // required to load the actor
+      Env.challenge, // required to load the actor
+      Env.explorer, // required to load the actor
+      Env.fishnet // required to schedule the cleaner
+    )) { lap =>
     lila.log("boot").info(s"${lap.millis}ms Preloading complete")
   }
 
@@ -99,11 +106,13 @@ final class Env(
 
 object Env {
 
-  lazy val current = "app" boot new Env(
-    config = lila.common.PlayApp.loadConfig,
-    scheduler = lila.common.PlayApp.scheduler,
-    system = lila.common.PlayApp.system,
-    appPath = lila.common.PlayApp withApp (_.path.getCanonicalPath))
+  lazy val current = "app".boot(
+    new Env(
+      config = lila.common.PlayApp.loadConfig,
+      scheduler = lila.common.PlayApp.scheduler,
+      system = lila.common.PlayApp.system,
+      appPath = lila.common.PlayApp.withApp(_.path.getCanonicalPath)
+    ))
 
   def api = lila.api.Env.current
   def db = lila.db.Env.current

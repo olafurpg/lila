@@ -3,8 +3,8 @@ package lila.common
 import scala.concurrent.ExecutionContext
 
 /**
- * For small code blocks that don't need to be run on a separate thread.
- */
+  * For small code blocks that don't need to be run on a separate thread.
+  */
 object SameThread extends ExecutionContext {
 
   val logger = lila.log.sameThread

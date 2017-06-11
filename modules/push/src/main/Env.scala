@@ -14,12 +14,12 @@ final class Env(
     appleCertificate: String => InputStream,
     system: ActorSystem) {
 
-  private val CollectionDevice = config getString "collection.device"
-  private val GooglePushUrl = config getString "google.url"
-  private val GooglePushKey = config getString "google.key"
-  private val ApplePushCertPath = config getString "apple.cert"
-  private val ApplePushPassword = config getString "apple.password"
-  private val ApplePushEnabled = config getBoolean "apple.enabled"
+  private val CollectionDevice = config.getString("collection.device")
+  private val GooglePushUrl = config.getString("google.url")
+  private val GooglePushKey = config.getString("google.key")
+  private val ApplePushCertPath = config.getString("apple.cert")
+  private val ApplePushPassword = config.getString("apple.password")
+  private val ApplePushEnabled = config.getBoolean("apple.enabled")
 
   private lazy val deviceApi = new DeviceApi(db(CollectionDevice))
 
@@ -38,32 +38,36 @@ final class Env(
     password = ApplePushPassword,
     enabled = ApplePushEnabled)
 
-  private lazy val pushApi = new PushApi(
-    googlePush,
-    applePush,
-    getLightUser,
-    roundSocketHub)
+  private lazy val pushApi = new PushApi(googlePush, applePush, getLightUser, roundSocketHub)
 
-  system.lilaBus.subscribe(system.actorOf(Props(new Actor {
-    import akka.pattern.pipe
-    def receive = {
-      case lila.game.actorApi.FinishGame(game, _, _) => pushApi finish game
-      case move: lila.hub.actorApi.round.MoveEvent   => pushApi move move
-      case lila.challenge.Event.Create(c)            => pushApi challengeCreate c
-      case lila.challenge.Event.Accept(c, joinerId)  => pushApi.challengeAccept(c, joinerId)
-    }
-  })), 'finishGame, 'moveEvent, 'challenge)
+  system.lilaBus.subscribe(
+    system.actorOf(Props(new Actor {
+      import akka.pattern.pipe
+      def receive = {
+        case lila.game.actorApi.FinishGame(game, _, _) => pushApi.finish(game)
+        case move: lila.hub.actorApi.round.MoveEvent => pushApi.move(move)
+        case lila.challenge.Event.Create(c) => pushApi.challengeCreate(c)
+        case lila.challenge.Event.Accept(c, joinerId) => pushApi.challengeAccept(c, joinerId)
+      }
+    })),
+    'finishGame,
+    'moveEvent,
+    'challenge
+  )
 }
 
 object Env {
 
-  lazy val current: Env = "push" boot new Env(
-    db = lila.db.Env.current,
-    system = lila.common.PlayApp.system,
-    getLightUser = lila.user.Env.current.lightUser,
-    roundSocketHub = lila.hub.Env.current.socket.round,
-    appleCertificate = path => lila.common.PlayApp.withApp {
-      _.classloader.getResourceAsStream(path)
-    },
-    config = lila.common.PlayApp loadConfig "push")
+  lazy val current: Env = "push".boot(
+    new Env(
+      db = lila.db.Env.current,
+      system = lila.common.PlayApp.system,
+      getLightUser = lila.user.Env.current.lightUser,
+      roundSocketHub = lila.hub.Env.current.socket.round,
+      appleCertificate = path =>
+        lila.common.PlayApp.withApp {
+          _.classloader.getResourceAsStream(path)
+      },
+      config = lila.common.PlayApp.loadConfig("push")
+    ))
 }

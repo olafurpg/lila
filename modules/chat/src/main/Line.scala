@@ -7,7 +7,7 @@ sealed trait Line {
   def author: String
   def isSystem = author == systemUserId
   def isHuman = !isSystem
-  def humanAuthor = isHuman option author
+  def humanAuthor = isHuman.option(author)
 }
 
 case class UserLine(username: String, text: String, troll: Boolean) extends Line {
@@ -20,7 +20,7 @@ case class PlayerLine(color: Color, text: String) extends Line {
 object Line {
 
   import lila.db.BSON
-  import reactivemongo.bson.{ BSONHandler, BSONString }
+  import reactivemongo.bson.{BSONHandler, BSONString}
 
   private val invalidLine = UserLine("", "[invalid character]", true)
 
@@ -38,17 +38,17 @@ object Line {
   def strToUserLine(str: String): Option[UserLine] = str match {
     case UserLineRegex(username, " ", text) => UserLine(username, text, false).some
     case UserLineRegex(username, "!", text) => UserLine(username, text, true).some
-    case _                                  => None
+    case _ => None
   }
   def userLineToStr(x: UserLine) = s"${x.username}${if (x.troll) "!" else " "}${x.text}"
 
-  def strToLine(str: String): Option[Line] = strToUserLine(str) orElse {
-    str.headOption flatMap Color.apply map { color =>
-      PlayerLine(color, str drop 2)
+  def strToLine(str: String): Option[Line] = strToUserLine(str).orElse {
+    str.headOption.flatMap(Color.apply).map { color =>
+      PlayerLine(color, str.drop(2))
     }
   }
   def lineToStr(x: Line) = x match {
-    case u: UserLine   => userLineToStr(u)
+    case u: UserLine => userLineToStr(u)
     case p: PlayerLine => s"${p.color.letter} ${p.text}"
   }
 
@@ -56,10 +56,10 @@ object Line {
 
   def toJson(line: Line) = line match {
     case UserLine(username, text, troll) => Json.obj("u" -> username, "t" -> text, "r" -> troll)
-    case PlayerLine(color, text)         => Json.obj("c" -> color.name, "t" -> text)
+    case PlayerLine(color, text) => Json.obj("c" -> color.name, "t" -> text)
   }
 
-  def toJsonString(lines: List[Line]) = Json stringify {
-    JsArray(lines map toJson)
+  def toJsonString(lines: List[Line]) = Json.stringify {
+    JsArray(lines.map(toJson))
   }
 }

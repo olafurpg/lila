@@ -45,12 +45,11 @@ final class Env(config: Config, system: ActorSystem) {
   }
 
   private def select(name: String) =
-    system actorSelection ("/user/" + config.getString(name))
+    system.actorSelection("/user/" + config.getString(name))
 }
 
 object Env {
 
-  lazy val current = "hub" boot new Env(
-    config = lila.common.PlayApp loadConfig "hub",
-    system = lila.common.PlayApp.system)
+  lazy val current = "hub".boot(
+    new Env(config = lila.common.PlayApp.loadConfig("hub"), system = lila.common.PlayApp.system))
 }
